@@ -84,13 +84,17 @@ class Table:
         self.holes = holes
         self.color = vector(118/255,238/255, 0)
 
-        ground = box(size=vector(self.height, 1, self.width), pos=vector(0, -1, 0), color=self.color)
+        ground = box(size=vector(self.height + self.cushion, 1, self.width + self.cushion), pos=vector(0, -1, 0), color=self.color)
         
-        wall_a = box(pos=vector(0, self.cushion // 2, -(self.width + self.cushion) // 2), axis=vector(1, 0, 0), size=vector(self.height + 2 * self.cushion, self.cushion, self.cushion), color=self.color)
-        wall_b = box(pos=vector(-(self.height + self.cushion)//2, self.cushion // 2, 0), axis=vector(0, 0, 1), size=vector(self.width + 2 * self.cushion, self.cushion, self.cushion), color=self.color)
-        wall_c = box(pos=vector(0, self.cushion // 2, (self.width + self.cushion) //2), axis=vector(1, 0, 0), size=vector(self.height + 2 * self.cushion, self.cushion, self.cushion), color=self.color)  
-        wall_d = box(pos=vector((self.height + self.cushion) //2, self.cushion // 2, 0), axis=vector(0, 0, 1), size=vector(self.width + 2 * self.cushion, self.cushion, self.cushion), color=self.color)   
-
+        wall_a = box(pos=vector(0, self.cushion // 2, -(self.width + self.cushion) // 2), axis=vector(1, 0, 0), size=vector(self.height + 1.65 * self.cushion, self.cushion, self.cushion), color=self.color)
+        wall_b = box(pos=vector(-(self.height + self.cushion)//2, self.cushion // 2, 0), axis=vector(0, 0, 1), size=vector(self.width + 1.65 * self.cushion, self.cushion, self.cushion), color=self.color)
+        wall_c = box(pos=vector(0, self.cushion // 2, (self.width + self.cushion) //2), axis=vector(1, 0, 0), size=vector(self.height + 1.65 * self.cushion, self.cushion, self.cushion), color=self.color)  
+        wall_d = box(pos=vector((self.height + self.cushion) //2, self.cushion // 2, 0), axis=vector(0, 0, 1), size=vector(self.width + 1.65 * self.cushion, self.cushion, self.cushion), color=self.color)   
+        
+        wall_a.rotate(angle=pi/11.)
+        wall_b.rotate(angle=-pi/11.)
+        wall_c.rotate(angle=-pi/11.)
+        wall_d.rotate(angle=pi/11.)
 
 if __name__ == '__main__':
     scene.background = 0.8 * vector(1, 1, 1)  # Lichtgrijs (0.8 van 1.0)
