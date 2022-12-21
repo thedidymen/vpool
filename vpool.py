@@ -82,19 +82,26 @@ class Table:
         self.height = height
         self.width = width
         self.holes = holes
-        self.color = vector(118/255,238/255, 0)
+        self.color_green = vector(118/255,238/255, 0)
+        self.color_wood = vector(133/255, 94/255, 66/255)
 
-        ground = box(size=vector(self.height + self.cushion, 1, self.width + self.cushion), pos=vector(0, -1, 0), color=self.color)
+        ground = box(size=vector(self.height + self.cushion, 1, self.width + self.cushion), pos=vector(0, -1, 0), color=self.color_green)
         
-        wall_a = box(pos=vector(0, self.cushion // 2, -(self.width + self.cushion) // 2), axis=vector(1, 0, 0), size=vector(self.height + 1.65 * self.cushion, self.cushion, self.cushion), color=self.color)
-        wall_b = box(pos=vector(-(self.height + self.cushion)//2, self.cushion // 2, 0), axis=vector(0, 0, 1), size=vector(self.width + 1.65 * self.cushion, self.cushion, self.cushion), color=self.color)
-        wall_c = box(pos=vector(0, self.cushion // 2, (self.width + self.cushion) //2), axis=vector(1, 0, 0), size=vector(self.height + 1.65 * self.cushion, self.cushion, self.cushion), color=self.color)  
-        wall_d = box(pos=vector((self.height + self.cushion) //2, self.cushion // 2, 0), axis=vector(0, 0, 1), size=vector(self.width + 1.65 * self.cushion, self.cushion, self.cushion), color=self.color)   
+        wall_a = box(pos=vector(0, self.cushion // 2, -(self.width + self.cushion) // 2), axis=vector(1, 0, 0), size=vector(self.height + 1.65 * self.cushion, self.cushion, self.cushion), color=self.color_green)
+        wall_b = box(pos=vector(-(self.height + self.cushion)//2, self.cushion // 2, 0), axis=vector(0, 0, 1), size=vector(self.width + 1.65 * self.cushion, self.cushion, self.cushion), color=self.color_green)
+        wall_c = box(pos=vector(0, self.cushion // 2, (self.width + self.cushion) //2), axis=vector(1, 0, 0), size=vector(self.height + 1.65 * self.cushion, self.cushion, self.cushion), color=self.color_green)  
+        wall_d = box(pos=vector((self.height + self.cushion) //2, self.cushion // 2, 0), axis=vector(0, 0, 1), size=vector(self.width + 1.65 * self.cushion, self.cushion, self.cushion), color=self.color_green)   
         
         wall_a.rotate(angle=pi/11.)
         wall_b.rotate(angle=-pi/11.)
         wall_c.rotate(angle=-pi/11.)
         wall_d.rotate(angle=pi/11.)
+
+        bound_a = box(pos=vector(0, self.cushion // 2, -(self.width + 4.75 * self.cushion) // 2), axis=vector(1, 0, 0), size=vector(self.height + 7.75 * self.cushion, 1.2 * self.cushion, 3 * self.cushion), color=self.color_wood)
+        bound_b = box(pos=vector(-(self.height + 4.75 * self.cushion)//2, self.cushion // 2, 0), axis=vector(0, 0, 1), size=vector(self.width + 7.75 * self.cushion, 1.2 * self.cushion, 3 * self.cushion), color=self.color_wood)
+        bound_c = box(pos=vector(0, self.cushion // 2, (self.width + 4.75 * self.cushion) //2), axis=vector(1, 0, 0), size=vector(self.height + 7.75 * self.cushion, 1.2 * self.cushion, 3 * self.cushion), color=self.color_wood)  
+        bound_d = box(pos=vector((self.height + 4.75 * self.cushion) //2, self.cushion // 2, 0), axis=vector(0, 0, 1), size=vector(self.width + 7.75 * self.cushion, 1.2 * self.cushion, 3 * self.cushion), color=self.color_wood)   
+
 
 if __name__ == '__main__':
     scene.background = 0.8 * vector(1, 1, 1)  # Lichtgrijs (0.8 van 1.0)
