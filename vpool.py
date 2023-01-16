@@ -119,39 +119,50 @@ class Table:
         # return compound(objects, pos=vector(0,0,0))
 
     def get_short_cushion(self):
-        return (self.width - self.cushion) // 2
+        """Return location of short cushion."""
+        # TO DO: figure out why to multiply by .5 to make the balls touch th cushion.
+        return (self.width - 0.5 * self.cushion) // 2
 
     def get_long_cushion(self):
-        return (self.height - self.cushion) // 2
+        """Return location of long cushion."""
+        # TO DO: figure out why to multiply by .5 to make the balls touch th cushion.
+        return (self.height - 0.5 * self.cushion) // 2
 
 
 class Ball:
 
     def __init__(self, radius, color, location, dt) -> None:
+        """Create a ball with a radius, color and location. dT is the time interval for each update."""
         self.dt = dt
         self.radius = radius
         self.ball = sphere(radius=radius, pos=location, color=color)
         self.ball.vel = vector(-3000, 0, 3000)
 
     def update(self, direction=1):
+        """Updat ball position with its velocity multiplied by delta T for directions times. Negative directions reverses steps."""
         self.ball.pos = self.ball.pos + self.ball.vel * self.dt * direction
 
     def get_position(self):
+        """Get ball positions"""
         return self.ball.pos
 
     def get_velocity(self):
+        """Get ball velocity"""
         return self.ball.vel
 
     def set_velocity(self, vel):
         self.ball.vel = vel
 
     def get_radius(self):
+        """Get ball radius"""
         return self.radius
 
     def invert_z_velocity(self):
+        """Invert the z component of the velocity"""
         self.ball.vel.z *= -1.0
 
     def invert_x_velocity(self):
+        """Invert the x component of the velocity"""
         self.ball.vel.x *= -1.0
 
 
@@ -162,6 +173,7 @@ class Collision:
         self.ball = ball
 
     def vs_table(self):
+        """Check for collisions between ball and table. Adjust ball velocity accordingly and reverse the movement of the ball."""
         # Als de bal short cushion raakt
         if -self.table.get_short_cushion() > self.ball.get_position().z - self.ball.get_radius() or self.ball.get_position().z + self.ball.get_radius() > self.table.get_short_cushion():
             self.ball.update(direction=-1)
@@ -172,6 +184,7 @@ class Collision:
             self.ball.invert_x_velocity()
 
     def vs_balls(self, balls):
+        """Check for collisions between ball and all the balls. Adjust the velocity of both balls in the collisions and reverse the movement of the ball."""
         for ball in balls:
             if ball == self.ball:
                 continue
