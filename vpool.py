@@ -111,28 +111,18 @@ class Table:
         wall_d.rotate(angle=pi/11.)
 
         bound_a = box(pos=vector(0, self.cushion // 2, -(self.width + 4.75 * self.cushion) // 2), axis=vector(1, 0, 0), size=vector(self.height + 7.75 * self.cushion, 1.2 * self.cushion, 3 * self.cushion), color=self.color_wood)
-        bound_b = box(pos=vector(-(self.height + 4.75 * self.cushion)//2, self.cushion // 2, 0), axis=vector(0, 0, 1), size=vector(self.width + 7.75 * self.cushion, 1.2 * self.cushion, 3 * self.cushion), color=self.color_wood)
+        bound_b = box(pos=vector(-(self.height + 4.75 * self.cushion)// 2, self.cushion // 2, 0), axis=vector(0, 0, 1), size=vector(self.width + 7.75 * self.cushion, 1.2 * self.cushion, 3 * self.cushion), color=self.color_wood)
         bound_c = box(pos=vector(0, self.cushion // 2, (self.width + 4.75 * self.cushion) //2), axis=vector(1, 0, 0), size=vector(self.height + 7.75 * self.cushion, 1.2 * self.cushion, 3 * self.cushion), color=self.color_wood)  
-        bound_d = box(pos=vector((self.height + 4.75 * self.cushion) //2, self.cushion // 2, 0), axis=vector(0, 0, 1), size=vector(self.width + 7.75 * self.cushion, 1.2 * self.cushion, 3 * self.cushion), color=self.color_wood)   
+        bound_d = box(pos=vector((self.height + 4.75 * self.cushion) // 2, self.cushion // 2, 0), axis=vector(0, 0, 1), size=vector(self.width + 7.75 * self.cushion, 1.2 * self.cushion, 3 * self.cushion), color=self.color_wood)   
 
         objects = [wall_a, wall_b, wall_c, wall_d, bound_a, bound_b, bound_c, bound_d]
         # return compound(objects, pos=vector(0,0,0))
 
-    def invalid_position(self, ball):
-        # Als de bal wall_a raakt
-        if (-(self.width - self.cushion) // 2) > ball.get_position().z - ball.get_radius():  # Geraakt -- vergelijk de x-positie
-            ball.invert_z_velocity()
-            return
-        if ball.get_position().z + ball.get_radius() > (self.width - self.cushion) // 2:  # Geraakt -- vergelijk de x-positie
-            ball.invert_z_velocity()
-            return
-        # Als de ball wall_b raakt
-        if ball.get_position().x + ball.get_radius() > (self.height - self.cushion) // 2:  # Geraakt -- vergelijk de z-positie
-            ball.invert_x_velocity()
-            return
-        if (-(self.height - self.cushion) // 2) > ball.get_position().x - ball.get_radius():  # Geraakt -- vergelijk de z-positie
-            ball.invert_x_velocity()
-            return
+    def get_short_cushion(self):
+        return (self.width - self.cushion) // 2
+
+    def get_long_cushion(self):
+        return (self.height - self.cushion) // 2
 
 
 class Ball:
@@ -149,6 +139,12 @@ class Ball:
     def get_position(self):
         return self.ball.pos
 
+    def get_velocity(self):
+        return self.ball.vel
+
+    def set_velocity(self, vel):
+        self.ball.vel = vel
+
     def get_radius(self):
         return self.radius
 
@@ -159,6 +155,46 @@ class Ball:
         self.ball.vel.x *= -1.0
 
 
+class Collision:
+
+    def __init__(self, table, ball):
+        self.table = table
+        self.ball = ball
+
+    def vs_table(self):
+        # Als de bal short cushion raakt
+        if -self.table.get_short_cushion() > self.ball.get_position().z - self.ball.get_radius() or self.ball.get_position().z + self.ball.get_radius() > self.table.get_short_cushion():
+            self.ball.update(direction=-1)
+            self.ball.invert_z_velocity()
+        # Als de ball long cushion raakt
+        if self.ball.get_position().x + self.ball.get_radius() > self.table.get_long_cushion() or -self.table.get_long_cushion() > self.ball.get_position().x - self.ball.get_radius():  
+            self.ball.update(direction=-1)
+            self.ball.invert_x_velocity()
+
+    def vs_balls(self, balls):
+        for ball in balls:
+            if ball == self.ball:
+                continue
+            distance = 2.0 * self.ball.get_radius()  # afstand om botsingen te controleren
+            # diff = de vector tussen de twee bollen
+            diff = ball.get_position() - self.ball.get_position()  # vector tussen de twee
+            if mag(diff) < distance:
+                # vector loodrecht op de vector diff
+                dtan = rotate(diff, radians(90), vector(0, 1, 0))
+                # neem de twee snelheden
+                velocity_ball = ball.get_velocity()
+                velocity_self_ball = self.ball.get_velocity()
+                # draai de laatste tijdstap terug
+                ball.update(direction=-1)
+                self.ball.update(direction=-1)
+                # haal de lood- en raaklijnen op
+                velocity_ball_rad = proj(velocity_ball, diff)
+                velocity_ball_tan = proj(velocity_ball, dtan)
+                velocity_self_ball_rad = proj(velocity_self_ball, -diff)
+                velocity_self_ball_tan = proj(velocity_self_ball, dtan)
+                # draai de loodlijnen om en bewaar de raaklijnen
+                ball.set_velocity(velocity_self_ball_rad + velocity_ball_tan)
+                self.ball.set_velocity(velocity_ball_rad + velocity_self_ball_tan)
 
 # snelheden: 35 km/h => 10 m/s => 10000 mm / s => 30000 mm / (1/30 s)
 
@@ -184,7 +220,9 @@ if __name__ == '__main__':
         rate(RATE)
         for ball in balls:
             ball.update()
-            table.invalid_position(ball)
+            c_detector = Collision(table, ball)
+            c_detector.vs_table()
+            c_detector.vs_balls(balls)
 
 
         
