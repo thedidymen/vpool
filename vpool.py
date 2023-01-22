@@ -1,5 +1,10 @@
 
 from vpython import *
+from math import sin, cos, radians
+
+RED = vector(255/255, 0, 0)
+YELLOW = vector(255/255, 255/255, 0)
+WHITE = vector(255/255, 255/255, 255/255)
 
 # Sizes in tenths of milimeters
 table_typen = {
@@ -136,7 +141,7 @@ class Ball:
         self.dt = dt
         self.radius = radius
         self.ball = sphere(radius=radius, pos=location, color=color)
-        self.ball.vel = vector(-3000, 0, 3000)
+        self.ball.vel = vector(0, 0, 0)
 
     def update(self, direction=1):
         """Updat ball position with its velocity multiplied by delta T for directions times. Negative directions reverses steps."""
@@ -211,22 +216,71 @@ class Collision:
 
 # snelheden: 35 km/h => 10 m/s => 10000 mm / s => 30000 mm / (1/30 s)
 
+class Cue:
+
+    def __init__(self, power=3000, max_power=4000):
+        self.angle = 0
+        self.power = power
+        self.max_power = max_power
+
+    def change_angle(self, direction, change=1):
+        self.angle = self.angle + direction * change
+        self.angle %= 360
+    
+    def get_angle(self):
+        return self.angle
+
+    def change_power(self, direction, change=300):
+        self.power = self.power + direction * change  
+        self.power = min(self.power, self.max_power)
+        self.power = max(self.power, 0)
+
+    def get_power(self):
+        return self.power
+
+
+def keydown_func(evt):
+    """This function is called each time a key is pressed."""
+    key = evt.key
+    print(f"toets: *{key}*")  # Drukt de ingedrukte toets af
+
+    # amt = 0.42              # Hoeveel de snelheid per toetsaanslag wordt aangepast
+    if key == 'up' or key in 'w':
+        cue.change_power(1)
+    elif key == 'left' or key in 'a':
+        cue.change_angle(-1)
+    elif key == 'down' or key in 's':
+        cue.change_angle(1)
+    elif key == 'right' or key in "d":
+        cue.change_power(-1)
+    elif key in ' ':
+        vel = vector(cue.get_power() * cos(radians(cue.get_angle())), 0, cue.get_power() * sin(radians(cue.get_angle())))
+        print(f"velocity: {vel}")
+        balls[0].set_velocity(vel)
+
+
+def click_fun(event):
+    """This function is called each time the mouse is clicked."""
+    print("event is", event.event, event.which)
 
 if __name__ == '__main__':
-    # hoofdstuk 6 cs python
     scene.background = 0.8 * vector(1, 1, 1)  # Lichtgrijs (0.8 van 1.0)
     scene.width = 1680                         # Maak het 3D-scherm groter
     scene.height = 1280
+    scene.bind('keydown', keydown_func)        # Functie voor toetsaanslagen
+    # scene.bind('click', click_fun)            # Functie voor muiskliks
+    scene.caption = """Hello World!"""
 
     RATE=30
     dT = 1.0/RATE
 
     table = Table(table_typen["Biljart"]["match"]["height"], table_typen["Biljart"]["match"]["width"], table_typen["Biljart"]["match"]["cushion"])
-    location_1 = vector(-table_typen["Biljart"]["match"]["height"]//4, ballen_typen["Biljart"]["size"], table_typen["Biljart"]["match"]["acquit"])
-    location_2 = vector(-table_typen["Biljart"]["match"]["height"]//4, ballen_typen["Biljart"]["size"], 0)
-    location_3 = vector(table_typen["Biljart"]["match"]["height"]//4, ballen_typen["Biljart"]["size"], 0)
-    locations = [location_1, location_2, location_3]
-    balls = [Ball(ballen_typen["Biljart"]["size"], vector(.8, .8, .8), loc, dT) for loc in locations]
+    location_1 = (vector(-table_typen["Biljart"]["match"]["height"]//4, ballen_typen["Biljart"]["size"], table_typen["Biljart"]["match"]["acquit"]), YELLOW)
+    location_2 = (vector(-table_typen["Biljart"]["match"]["height"]//4, ballen_typen["Biljart"]["size"], 0), WHITE)
+    location_3 = (vector(table_typen["Biljart"]["match"]["height"]//4, ballen_typen["Biljart"]["size"], 0), RED)
+    locations = [location_2, location_1, location_3]
+    balls = [Ball(ballen_typen["Biljart"]["size"], loc[1], loc[0], dT) for loc in locations]
+    cue = Cue()
 
 
     while True:
