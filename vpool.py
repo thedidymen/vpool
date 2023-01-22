@@ -1,4 +1,3 @@
-
 from vpython import *
 from math import sin, cos, radians
 
@@ -215,7 +214,7 @@ class Collision:
 
 class Cue:
 
-    def __init__(self, power=3000, max_power=4000):
+    def __init__(self, power=5000, max_power=10000):
         """Generate object to show direction and speed of cue-ball"""
         self.rod = cylinder(pos = vector(0, 50, 0), axis = vector(1000, 0, 0),radius = 20, color = vector(139, 69, 19)/255)
         self.angle = 0
@@ -243,26 +242,35 @@ class Cue:
         """Get current power of cue-ball"""
         return self.power
 
+    def new_velocity(self):
+        return vector(cue.get_power() * cos(radians(cue.get_angle())), 0, cue.get_power() * sin(radians(cue.get_angle())))
+
 
 def keydown_func(evt):
     """This function is called each time a key is pressed."""
     key = evt.key
-    vel = vector(cue.get_power() * cos(radians(cue.get_angle())), 0, cue.get_power() * sin(radians(cue.get_angle())))
 
     # define keys to change power (w and s), angle (a and d)
     if key in 'w':
         cue.change_power(1)             # increase power
     elif  key in 'a':
         cue.change_angle(-1)            # change angle counterclockwise
+    elif  key in 'q':
+        cue.change_angle(-1, 10)        # change angle counterclockwise
     elif key in 's':
         cue.change_power(1)             # decrease power
     elif key in 'd':
         cue.change_angle(-1)            # change angle clockwise
-    elif key in ' ':
+    elif key in 'e':
+        cue.change_angle(-1, 10)        # fast change angle clockwise
+    elif key in ' ':                    # shoot cue-ball in given direction
         vel = vector(cue.get_power() * cos(radians(cue.get_angle())), 0, cue.get_power() * sin(radians(cue.get_angle())))
-        balls[0].set_velocity(vel)
-    elif key in 'q':                    # sets velocity of cueball to zero
+        balls[0].set_velocity(cue.new_velocity())
+    elif key in 'z':                    # sets velocity of cueball to zero
         balls[0].set_velocity(vector(0, 0, 0))
+    elif key in 'x':                    # sets velocity of all balls to zero
+        for ball in balls:
+            ball.set_velocity(vector(0, 0, 0))
 
 
 # def click_fun(event):
@@ -315,9 +323,5 @@ if __name__ == '__main__':
             c_detector.vs_balls(balls)
 
             # draw direction vector at current position
-            cue.rod.axis = vel
+            cue.rod.axis = cue.new_velocity()
             cue.rod.pos = balls[0].get_position()
-
-
-        
-
