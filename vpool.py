@@ -1,3 +1,5 @@
+# GlowScript 2.8 VPython
+
 from vpython import *
 from math import sin, cos, radians
 
@@ -88,7 +90,7 @@ ballen_typen = {
 
 class Table:
 
-    def __init__(self, height, width, cushion, holes=False) -> None:
+    def __init__(self, height, width, cushion, holes=False):
         self.cushion = cushion
         self.height = height
         self.width = width
@@ -131,7 +133,7 @@ class Table:
 
 class Ball:
 
-    def __init__(self, radius, color, location, dt) -> None:
+    def __init__(self, radius, color, location, dt):
         """Create a ball with a radius (int), color (vector) and location (vector). dT (float) is the time interval for each update."""
         self.dt = dt
         self.radius = radius
@@ -260,9 +262,9 @@ def keydown_func(evt):
     elif key in 's':
         cue.change_power(1)             # decrease power
     elif key in 'd':
-        cue.change_angle(-1)            # change angle clockwise
+        cue.change_angle(1)             # change angle clockwise
     elif key in 'e':
-        cue.change_angle(-1, 10)        # fast change angle clockwise
+        cue.change_angle(1, 10)         # fast change angle clockwise
     elif key in ' ':                    # shoot cue-ball in given direction
         vel = vector(cue.get_power() * cos(radians(cue.get_angle())), 0, cue.get_power() * sin(radians(cue.get_angle())))
         balls[0].set_velocity(cue.new_velocity())
