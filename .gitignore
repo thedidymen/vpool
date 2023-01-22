@@ -4,6 +4,7 @@ begin.py
 begin.txt
 milestone.txt
 oplevering.txt
+notes.md
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
