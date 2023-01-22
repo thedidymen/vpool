@@ -1,5 +1,9 @@
 tmp/
 log.log
+begin.py
+begin.txt
+milestone.txt
+oplevering.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
