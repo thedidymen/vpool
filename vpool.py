@@ -258,11 +258,11 @@ def keydown_func(evt):
     elif  key in 'q':
         cue.change_angle(-1, 10)        # change angle counterclockwise
     elif key in 's':
-        cue.change_power(1)             # decrease power
+        cue.change_power(-1)             # decrease power
     elif key in 'd':
-        cue.change_angle(-1)            # change angle clockwise
+        cue.change_angle(1)            # change angle clockwise
     elif key in 'e':
-        cue.change_angle(-1, 10)        # fast change angle clockwise
+        cue.change_angle(1, 10)        # fast change angle clockwise
     elif key in ' ':                    # shoot cue-ball in given direction
         vel = vector(cue.get_power() * cos(radians(cue.get_angle())), 0, cue.get_power() * sin(radians(cue.get_angle())))
         balls[0].set_velocity(cue.new_velocity())
