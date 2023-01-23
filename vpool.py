@@ -243,7 +243,8 @@ class Cue:
         return self.power
 
     def new_velocity(self):
-        return vector(cue.get_power() * cos(radians(cue.get_angle())), 0, cue.get_power() * sin(radians(cue.get_angle())))
+        rad = radians(cue.get_angle())
+        return vector(cue.get_power() * cos(rad), 0, cue.get_power() * sin(rad))
 
 
 def keydown_func(evt):
