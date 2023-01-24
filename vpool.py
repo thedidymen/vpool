@@ -139,11 +139,12 @@ class Ball:
         self.ball.vel = vector(0, 0, 0)
 
     def update(self, direction=1):
-        """Updat ball position with its velocity multiplied by delta T for directions times. Negative directions reverses steps."""
+        """Move the ball, apply friction."""
         self.move(direction)
         self.friction()
 
     def friction(self):
+        """Progressively apply friction and set velocity to zero when the magnitude approached zero."""
         magnitude = self.get_velocity().mag
         friction = 1.0
         if magnitude > 1000:            # progressive increase in friction to prevent long waiting for the balls to stop 
@@ -158,6 +159,7 @@ class Ball:
         self.ball.vel *= friction       # some how getting fancy with setter en getter breaks this code! If it ain't broke, dont fix it!
     
     def move(self, direction):
+        """Update ball position with its velocity multiplied by delta T for directions times. Negative directions reverses steps."""
         self.set_position(self.get_position() + self.get_velocity() * self.dt * direction)
 
     def get_position(self):
@@ -187,6 +189,9 @@ class Ball:
     def invert_x_velocity(self):
         """Invert the x component of the velocity"""
         self.ball.vel.x *= -1.0
+
+    def has_speed(self):
+        return self.get_velocity().mag > 0
 
 
 class Collision:
@@ -268,6 +273,11 @@ class Cue:
         rad = radians(cue.get_angle())
         return vector(cue.get_power() * cos(rad), 0, cue.get_power() * sin(rad))
 
+    def visible(self):
+        self.rod.opacity = 1
+
+    def invisible(self):
+        self.rod.opacity = 0
 
 def keydown_func(evt):
     """This function is called each time a key is pressed."""
@@ -335,10 +345,14 @@ if __name__ == '__main__':
 
 
     while True:
+        
         rate(RATE)
+        speed_vector = []
+
         for ball in balls:
             # move ball to next position
             ball.update()
+            speed_vector.append(ball.has_speed())
 
             # check for collisions with objects
             c_detector = Collision(table, ball)
@@ -348,3 +362,9 @@ if __name__ == '__main__':
             # draw direction vector at current position
             cue.rod.axis = cue.new_velocity()
             cue.rod.pos = balls[0].get_position()
+
+            # draw direction vector at current position
+            if any(speed_vector):
+                cue.invisible()
+            else:
+                cue.visible()
