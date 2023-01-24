@@ -1,5 +1,5 @@
 from vpython import *
-from math import sin, cos, radians
+# from math import sin, cos, radians, log10 as logtien
 
 # Sizes in tenths of milimeters
 table_typen = {
@@ -88,7 +88,7 @@ ballen_typen = {
 
 class Table:
 
-    def __init__(self, height, width, cushion, holes=False) -> None:
+    def __init__(self, height, width, cushion, holes=False):
         self.cushion = cushion
         self.height = height
         self.width = width
@@ -131,7 +131,7 @@ class Table:
 
 class Ball:
 
-    def __init__(self, radius, color, location, dt) -> None:
+    def __init__(self, radius, color, location, dt):
         """Create a ball with a radius (int), color (vector) and location (vector). dT (float) is the time interval for each update."""
         self.dt = dt
         self.radius = radius
@@ -140,11 +140,33 @@ class Ball:
 
     def update(self, direction=1):
         """Updat ball position with its velocity multiplied by delta T for directions times. Negative directions reverses steps."""
-        self.ball.pos = self.ball.pos + self.ball.vel * self.dt * direction
+        self.move(direction)
+        self.friction()
+
+    def friction(self):
+        magnitude = self.get_velocity().mag
+        friction = 1.0
+        if magnitude > 1000:            # progressive increase in friction to prevent long waiting for the balls to stop 
+            friction = 0.996
+        elif magnitude > 100:
+            friction = 0.96
+        elif magnitude > 10:
+            friction = 0.6
+        else:
+            self.ball.vel = vector(0, 0, 0)
+
+        self.ball.vel *= friction       # some how getting fancy with setter en getter breaks this code! If it ain't broke, dont fix it!
+    
+    def move(self, direction):
+        self.set_position(self.get_position() + self.get_velocity() * self.dt * direction)
 
     def get_position(self):
         """Get ball position, returns vector"""
         return self.ball.pos
+
+    def set_position(self, pos):
+        """Get ball position, returns vector"""
+        self.ball.pos = pos
 
     def get_velocity(self):
         """Get ball velocity, returns vector"""
