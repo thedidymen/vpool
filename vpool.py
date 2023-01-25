@@ -120,12 +120,10 @@ class Table:
 
     def get_short_cushion(self):
         """Return location of short cushion."""
-        # TO DO: figure out why to multiply by .5 to make the balls touch the cushion.
         return (self.width - 0.5 * self.cushion) // 2
 
     def get_long_cushion(self):
         """Return location of long cushion."""
-        # TO DO: figure out why to multiply by .5 to make the balls touch the cushion.
         return (self.height - 0.5 * self.cushion) // 2
 
 
@@ -147,10 +145,12 @@ class Ball:
         """Progressively apply friction and set velocity to zero when the magnitude approached zero."""
         magnitude = self.get_velocity().mag
         friction = 1.0
-        if magnitude > 1000:            # progressive increase in friction to prevent long waiting for the balls to stop 
+        if magnitude > 3000:            # progressive increase in friction to prevent long waiting for the balls to stop 
             friction = 0.996
-        elif magnitude > 100:
+        elif magnitude > 1000:
             friction = 0.96
+        elif magnitude > 300:
+            friction = 0.85
         elif magnitude > 10:
             friction = 0.6
         else:
@@ -241,7 +241,7 @@ class Collision:
 
 class Cue:
 
-    def __init__(self, power=5000, max_power=10000):
+    def __init__(self, power=5000, max_power=20000):
         """Generate object to show direction and speed of cue-ball"""
         self.rod = cylinder(pos = vector(0, 50, 0), axis = vector(1000, 0, 0),radius = 20, color = vector(139, 69, 19)/255)
         self.angle = 0
@@ -349,14 +349,19 @@ if __name__ == '__main__':
     
     # create staring positions for balls
     # TO DO: move to class for starting positions for libre
-    location_1 = (vector(-table_typen["Biljart"]["match"]["height"]//4, ballen_typen["Biljart"]["size"], table_typen["Biljart"]["match"]["acquit"]), YELLOW)
-    location_2 = (vector(-table_typen["Biljart"]["match"]["height"]//4, ballen_typen["Biljart"]["size"], 0), WHITE)
+    location_1 = (vector(-table_typen["Biljart"]["match"]["height"]//4, ballen_typen["Biljart"]["size"], table_typen["Biljart"]["match"]["acquit"]), WHITE)
+    location_2 = (vector(-table_typen["Biljart"]["match"]["height"]//4, ballen_typen["Biljart"]["size"], 0), YELLOW)
     location_3 = (vector(table_typen["Biljart"]["match"]["height"]//4, ballen_typen["Biljart"]["size"], 0), RED)
-    locations = [location_2, location_1, location_3]
+    locations = [location_1, location_2, location_3]
 
     # create balls for libre
     balls = [Ball(ballen_typen["Biljart"]["size"], loc[1], loc[0], dT) for loc in locations]
     cue = Cue()
+
+    # fix camera position, currently based on magic numbers!
+    scene.camera.pos = vector(-28500, 6500, 0)
+    scene.camera.axis = vector(28500, -6500, 0)
+
 
 
     while True:
