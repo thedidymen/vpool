@@ -259,7 +259,7 @@ class Cue:
         """Get current angle of cue-ball"""
         return self.angle
 
-    def change_power(self, direction, change=300):
+    def change_power(self, direction, change=100):
         """Change power of next shot, takes direction (-1 or 1) and change (cast to int)"""
         self.power = int(self.power + direction * change) 
         self.power = min(self.power, self.max_power)
@@ -283,22 +283,37 @@ def keydown_func(evt):
     """This function is called each time a key is pressed."""
     key = evt.key
 
-    # define keys to change power (w and s), angle (a and d)
+    # define keys to change power (w and s), angle (a, q and d, e)
     if key in 'w':
-        cue.change_power(1)             # increase power
-    elif  key in 'a':
-        cue.change_angle(-1)            # change angle counterclockwise
-    elif  key in 'q':
-        cue.change_angle(-1, 10)        # change angle counterclockwise
+        cue.change_power(1)              # increase power
+    elif key in 'W':
+        cue.change_power(1, 1000)        # big increase power
     elif key in 's':
         cue.change_power(-1)             # decrease power
+    elif key in 'S':
+        cue.change_power(-1, 1000)       # big decrease power
+
+    elif  key in 'a':
+        cue.change_angle(-1)             # change angle counterclockwise
+    elif  key in 'A':
+        cue.change_angle(-1, 0.1)        # small change angle counterclockwise
+    elif  key in 'q':
+        cue.change_angle(-1, 10)         # big change angle counterclockwise
+    elif  key in 'Q':
+        cue.change_angle(-1, 90)         # huge change angle counterclockwise
+
     elif key in 'd':
-        cue.change_angle(1)            # change angle clockwise
+        cue.change_angle(1)             # change angle clockwise
+    elif key in 'D':
+        cue.change_angle(1, 0.1)        # small change angle clockwise
     elif key in 'e':
-        cue.change_angle(1, 10)        # fast change angle clockwise
+        cue.change_angle(1, 10)         # big change angle clockwise
+    elif key in 'E':
+        cue.change_angle(1, 90)         # huge change angle clockwise
+
     elif key in ' ':                    # shoot cue-ball in given direction
-        vel = vector(cue.get_power() * cos(radians(cue.get_angle())), 0, cue.get_power() * sin(radians(cue.get_angle())))
         balls[0].set_velocity(cue.new_velocity())
+        
     elif key in 'z':                    # sets velocity of cueball to zero
         balls[0].set_velocity(vector(0, 0, 0))
     elif key in 'x':                    # sets velocity of all balls to zero
