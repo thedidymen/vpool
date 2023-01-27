@@ -1,5 +1,4 @@
 from vpython import *
-# from math import sin, cos, radians, log10 as logtien
 
 # Sizes in tenths of milimeters
 table_typen = {
@@ -10,55 +9,6 @@ table_typen = {
             "acquit": 1825,
             "cushion": 370,
         },
-        "club": {
-            "height": 23000,
-            "width": 11500,
-            "acquit": 1550,
-            "cushion": 370,
-        },
-        "cafe": {
-            "height": 21000,
-            "width": 10500,
-            "acquit": 1375,
-            "cushion": 370,
-        },
-        "oefen": {
-            "height": 18000,
-            "width": 9000,
-            "acquit": 1175,
-            "cushion": 370,
-        },
-        "holes": {
-            "present": False,
-        }
-    },
-    "Pool": {
-        # Rail height = 63,5 % of ball height
-        # https://wpapool.com/equipment-specifications/#Rail-and-Cushion
-        "match": {
-            "height": 25400,
-            "width": 12700,
-        },
-        "club": {
-            "height": 22368,
-            "width": 11684,
-        },
-        "cafe": {
-            "height": 19304,
-            "width": 9652,
-        },
-        "holes": {
-            "present": True,
-        }
-    },
-    "Snooker": {
-        "match": {
-            "height": 35690,
-            "width": 17780,
-        },
-        "holes": {
-            "present": True,
-        }
     },
 }
 
@@ -78,12 +28,6 @@ ballen_typen = {
     "Biljart": {
         "size": 615 // 2
     },
-    "Pool": {
-        "size": 572/2
-    },
-    "Snooker": {
-        "size": 524/2
-    },
 }
 
 class Table:
@@ -93,8 +37,8 @@ class Table:
         self.height = height
         self.width = width
         self.holes = holes
-        self.color_green = vector(118/255,238/255, 0)
-        self.color_wood = vector(133/255, 94/255, 66/255)
+        self.color_green = GREEN
+        self.color_wood = WOOD
         self.table = self.create_table()
 
     def create_table(self):
@@ -135,6 +79,8 @@ class Ball:
         self.radius = radius
         self.ball = sphere(radius=radius, pos=location, color=color)
         self.ball.vel = vector(0, 0, 0)
+        self.collided_with = []
+        self.color = color
 
     def update(self, direction=1):
         """Move the ball, apply friction."""
@@ -343,6 +289,8 @@ if __name__ == '__main__':
     RED = vector(255/255, 0, 0)
     YELLOW = vector(255/255, 255/255, 0)
     WHITE = vector(255/255, 255/255, 255/255)
+    GREEN = vector(118/255,238/255, 0)
+    WOOD = vector(133/255, 94/255, 66/255)
 
     # create table object
     table = Table(table_typen["Biljart"]["match"]["height"], table_typen["Biljart"]["match"]["width"], table_typen["Biljart"]["match"]["cushion"])
@@ -361,8 +309,6 @@ if __name__ == '__main__':
     # fix camera position, currently based on magic numbers!
     scene.camera.pos = vector(-28500, 6500, 0)
     scene.camera.axis = vector(28500, -6500, 0)
-
-
 
     while True:
         
