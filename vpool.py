@@ -14,6 +14,7 @@ table_typen = {
 
 # games = {
 #     "Libre": {
+        
 #         "start_pos": {
 #             "White": {
 #                 "color": vector(.8, .8, .8),
@@ -23,6 +24,12 @@ table_typen = {
 #     }
 # }
 
+colors = [
+    {"color": "WHITE", "vector": vector(255/255, 255/255, 255/255)},  
+    {"color": "YELLOW", "vector": vector(255/255, 255/255, 0)},
+    {"color": "RED", "vector": vector(255/255, 0, 0)},
+]
+
 # Sizes in tenths of milimeters
 ballen_typen = {
     "Biljart": {
@@ -30,34 +37,48 @@ ballen_typen = {
     },
 }
 
+class Color:
+
+    def __init__(self, color, vec):
+        self.color = color
+        self.vec = vec
+
+    def __repr__(self):
+        return self.color
+
+    def rgb(self):
+        return self.vec
+
+
 class Table:
+
+    GREEN = vector(118/255,238/255, 0)
+    WOOD = vector(133/255, 94/255, 66/255)
 
     def __init__(self, height, width, cushion, holes=False):
         self.cushion = cushion
         self.height = height
         self.width = width
         self.holes = holes
-        self.color_green = GREEN
-        self.color_wood = WOOD
         self.table = self.create_table()
 
     def create_table(self):
-        ground = box(size=vector(self.height + self.cushion, 1, self.width + self.cushion), pos=vector(0, -1, 0), color=self.color_green)
+        ground = box(size=vector(self.height + self.cushion, 1, self.width + self.cushion), pos=vector(0, -1, 0), color=self.GREEN)
         
-        wall_a = box(pos=vector(0, self.cushion // 2, -(self.width + self.cushion) // 2), axis=vector(1, 0, 0), size=vector(self.height + 1.65 * self.cushion, self.cushion, self.cushion), color=self.color_green)
-        wall_b = box(pos=vector(-(self.height + self.cushion) // 2, self.cushion // 2, 0), axis=vector(0, 0, 1), size=vector(self.width + 1.65 * self.cushion, self.cushion, self.cushion), color=self.color_green)
-        wall_c = box(pos=vector(0, self.cushion // 2, (self.width + self.cushion) // 2), axis=vector(1, 0, 0), size=vector(self.height + 1.65 * self.cushion, self.cushion, self.cushion), color=self.color_green)  
-        wall_d = box(pos=vector((self.height + self.cushion) // 2, self.cushion // 2, 0), axis=vector(0, 0, 1), size=vector(self.width + 1.65 * self.cushion, self.cushion, self.cushion), color=self.color_green)   
+        wall_a = box(pos=vector(0, self.cushion // 2, -(self.width + self.cushion) // 2), axis=vector(1, 0, 0), size=vector(self.height + 1.65 * self.cushion, self.cushion, self.cushion), color=self.GREEN)
+        wall_b = box(pos=vector(-(self.height + self.cushion) // 2, self.cushion // 2, 0), axis=vector(0, 0, 1), size=vector(self.width + 1.65 * self.cushion, self.cushion, self.cushion), color=self.GREEN)
+        wall_c = box(pos=vector(0, self.cushion // 2, (self.width + self.cushion) // 2), axis=vector(1, 0, 0), size=vector(self.height + 1.65 * self.cushion, self.cushion, self.cushion), color=self.GREEN)  
+        wall_d = box(pos=vector((self.height + self.cushion) // 2, self.cushion // 2, 0), axis=vector(0, 0, 1), size=vector(self.width + 1.65 * self.cushion, self.cushion, self.cushion), color=self.GREEN)   
         
         wall_a.rotate(angle=pi/11.)
         wall_b.rotate(angle=-pi/11.)
         wall_c.rotate(angle=-pi/11.)
         wall_d.rotate(angle=pi/11.)
 
-        bound_a = box(pos=vector(0, self.cushion // 2, -(self.width + 4.75 * self.cushion) // 2), axis=vector(1, 0, 0), size=vector(self.height + 7.75 * self.cushion, 1.2 * self.cushion, 3 * self.cushion), color=self.color_wood)
-        bound_b = box(pos=vector(-(self.height + 4.75 * self.cushion)// 2, self.cushion // 2, 0), axis=vector(0, 0, 1), size=vector(self.width + 7.75 * self.cushion, 1.2 * self.cushion, 3 * self.cushion), color=self.color_wood)
-        bound_c = box(pos=vector(0, self.cushion // 2, (self.width + 4.75 * self.cushion) //2), axis=vector(1, 0, 0), size=vector(self.height + 7.75 * self.cushion, 1.2 * self.cushion, 3 * self.cushion), color=self.color_wood)  
-        bound_d = box(pos=vector((self.height + 4.75 * self.cushion) // 2, self.cushion // 2, 0), axis=vector(0, 0, 1), size=vector(self.width + 7.75 * self.cushion, 1.2 * self.cushion, 3 * self.cushion), color=self.color_wood)   
+        bound_a = box(pos=vector(0, self.cushion // 2, -(self.width + 4.75 * self.cushion) // 2), axis=vector(1, 0, 0), size=vector(self.height + 7.75 * self.cushion, 1.2 * self.cushion, 3 * self.cushion), color=self.WOOD)
+        bound_b = box(pos=vector(-(self.height + 4.75 * self.cushion)// 2, self.cushion // 2, 0), axis=vector(0, 0, 1), size=vector(self.width + 7.75 * self.cushion, 1.2 * self.cushion, 3 * self.cushion), color=self.WOOD)
+        bound_c = box(pos=vector(0, self.cushion // 2, (self.width + 4.75 * self.cushion) //2), axis=vector(1, 0, 0), size=vector(self.height + 7.75 * self.cushion, 1.2 * self.cushion, 3 * self.cushion), color=self.WOOD)  
+        bound_d = box(pos=vector((self.height + 4.75 * self.cushion) // 2, self.cushion // 2, 0), axis=vector(0, 0, 1), size=vector(self.width + 7.75 * self.cushion, 1.2 * self.cushion, 3 * self.cushion), color=self.WOOD)   
 
         objects = [wall_a, wall_b, wall_c, wall_d, bound_a, bound_b, bound_c, bound_d]
         # return compound(objects, pos=vector(0,0,0))
@@ -286,11 +307,6 @@ if __name__ == '__main__':
     # Constants
     RATE=30
     dT = 1.0/RATE
-    RED = vector(255/255, 0, 0)
-    YELLOW = vector(255/255, 255/255, 0)
-    WHITE = vector(255/255, 255/255, 255/255)
-    GREEN = vector(118/255,238/255, 0)
-    WOOD = vector(133/255, 94/255, 66/255)
 
     # create table object
     table = Table(table_typen["Biljart"]["match"]["height"], table_typen["Biljart"]["match"]["width"], table_typen["Biljart"]["match"]["cushion"])
