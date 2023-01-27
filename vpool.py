@@ -1,5 +1,10 @@
 from vpython import *
 
+import logging
+import logging.config
+
+logging.config.fileConfig('logging.ini')
+
 # Sizes in tenths of milimeters
 table_typen = {
     "Biljart": {
@@ -388,6 +393,10 @@ if __name__ == '__main__':
     # notes:
     # snelheden: 35 km/h => 10 m/s => 10000 mm / s => 30000 mm / (1/30 s)
 
+    # Set up logging
+    logger = logging.getLogger(__name__)
+    logger.debug("test")
+
     # setting up canvas
     scene.background = 0.8 * vector(1, 1, 1)  # Lichtgrijs (0.8 van 1.0)
     scene.width = 1280                         # Maak het 3D-scherm groter
@@ -447,13 +456,6 @@ if __name__ == '__main__':
                     if len(ball.get_collisions()) > 0:
                         score.score_shot("Reijer", ball.get_collisions())
                         print(score)
-                        # print(ball.get_collisions())
-                        # print("hit_objects:", score.hit_objects(["YELLOW", "RED"], ball.get_collisions()))
-                        # print("Cushion first:", score.cushion_first(ball.get_collisions()))
-                        # print("Cushion first:", score.cushion_first(ball.get_collisions()))
-                        # print("Cushion 1 -  RED:", score.n_cushions(["RED"], ball.get_collisions(), 1))
-                        # print("Cushion 1 -  YELLOW:", score.n_cushions(["YELLOW"], ball.get_collisions(), 1))
-                        # print("Cushion 2 -  RED:", score.n_cushions(["RED"], ball.get_collisions(), 2))
-                        # print("Cushion 2 -  YELLOW:", score.n_cushions(["YELLOW"], ball.get_collisions(), 2))
+                        scene.caption = f"""{score}"""
                         ball.reset_collisions()
                 cue.visible()
