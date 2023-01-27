@@ -3,7 +3,6 @@ from vpython import *
 import logging
 import logging.config
 
-logging.config.fileConfig('logging.ini')
 
 # Sizes in tenths of milimeters
 table_typen = {
@@ -294,7 +293,7 @@ class Score:
     def hit_objects(self, objects, collisions):
         """Return Bool if all objects are hit."""
         set_collisions = set(collisions)
-        print("set:", set_collisions, "any:", [object in set_collisions for object in objects])
+        # logger.debug("set:", set_collisions, "any:", [object in set_collisions for object in objects])
         return all([object in set_collisions for object in objects])
 
     def cushion_first(self, collisions):
@@ -389,13 +388,55 @@ def keydown_func(evt):
 #     """This function is called each time the mouse is clicked."""
 #     print("event is", event.event, event.which)
 
+class Game:
+
+    def __init__(self, table, balls, cue, score):
+        self.table = table
+        self.balls = balls
+        self.cue = cue
+        self.score = score
+
+    def game_loop(self):
+        while True:
+            rate(RATE)
+            self.balls_update()
+
+    def balls_update(self):
+        speed_vector = []
+        for ball in self.balls:
+            # move ball to next position
+            ball.update()
+            speed_vector.append(ball.has_speed())
+
+            # check for collisions with objects
+            c_detector = Collision(self.table, ball)
+            c_detector.vs_table()
+            c_detector.vs_balls(balls)
+
+            # draw direction vector at current position
+            self.cue.rod.axis = self.cue.new_velocity()
+            self.cue.rod.pos = self.balls[0].get_position()
+
+            # draw direction vector at current position
+            if any(speed_vector):
+                self.cue.invisible()
+            else:
+                for ball in self.balls:
+                    if len(ball.get_collisions()) > 0:
+                        self.score.score_shot("Reijer", ball.get_collisions())
+                        scene.caption = f"""{score}"""
+                        ball.reset_collisions()
+                self.cue.visible()
+
+
 if __name__ == '__main__':
     # notes:
     # snelheden: 35 km/h => 10 m/s => 10000 mm / s => 30000 mm / (1/30 s)
 
     # Set up logging
-    logger = logging.getLogger(__name__)
-    logger.debug("test")
+    # logger = logging.getLogger(__name__)
+    # logging.config.fileConfig('logging.ini')
+    # logger.warning("Setting up Vpool")
 
     # setting up canvas
     scene.background = 0.8 * vector(1, 1, 1)  # Lichtgrijs (0.8 van 1.0)
@@ -429,33 +470,5 @@ if __name__ == '__main__':
     
     score = LibreScore(["Reijer"], ["YELLOW", "RED"], 1)
 
-    while True:
-        
-        rate(RATE)
-        speed_vector = []
-
-        for ball in balls:
-            # move ball to next position
-            ball.update()
-            speed_vector.append(ball.has_speed())
-
-            # check for collisions with objects
-            c_detector = Collision(table, ball)
-            c_detector.vs_table()
-            c_detector.vs_balls(balls)
-
-            # draw direction vector at current position
-            cue.rod.axis = cue.new_velocity()
-            cue.rod.pos = balls[0].get_position()
-
-            # draw direction vector at current position
-            if any(speed_vector):
-                cue.invisible()
-            else:
-                for ball in balls:
-                    if len(ball.get_collisions()) > 0:
-                        score.score_shot("Reijer", ball.get_collisions())
-                        print(score)
-                        scene.caption = f"""{score}"""
-                        ball.reset_collisions()
-                cue.visible()
+    game = Game(table, balls, cue, score)
+    game.game_loop()
