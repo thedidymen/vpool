@@ -62,6 +62,9 @@ class Table:
         self.holes = holes
         self.table = self.create_table()
 
+    def __repr__(self):
+        return "Table"
+
     def create_table(self):
         ground = box(size=vector(self.height + self.cushion, 1, self.width + self.cushion), pos=vector(0, -1, 0), color=self.GREEN)
         
@@ -95,13 +98,16 @@ class Table:
 class Ball:
 
     def __init__(self, radius, color, location, dt):
-        """Create a ball with a radius (int), color (vector) and location (vector). dT (float) is the time interval for each update."""
+        """Create a ball with a radius (int), color (Color) and location (vector). dT (float) is the time interval for each update."""
         self.dt = dt
         self.radius = radius
-        self.ball = sphere(radius=radius, pos=location, color=color)
+        self.ball = sphere(radius=radius, pos=location, color=color.rgb())
         self.ball.vel = vector(0, 0, 0)
-        self.collided_with = []
+        self.collisions = []
         self.color = color
+
+    def __repr__(self):
+        return str(self.color)
 
     def update(self, direction=1):
         """Move the ball, apply friction."""
@@ -130,35 +136,48 @@ class Ball:
         self.set_position(self.get_position() + self.get_velocity() * self.dt * direction)
 
     def get_position(self):
-        """Get ball position, returns vector"""
+        """Get ball position, returns vector."""
         return self.ball.pos
 
     def set_position(self, pos):
-        """Get ball position, returns vector"""
+        """Get ball position, returns vector."""
         self.ball.pos = pos
 
     def get_velocity(self):
-        """Get ball velocity, returns vector"""
+        """Get ball velocity, returns vector."""
         return self.ball.vel
 
     def set_velocity(self, vel):
-        """Set ball velocity, takes vector"""
+        """Set ball velocity, takes vector."""
         self.ball.vel = vel
 
     def get_radius(self):
-        """Get ball radius, returns int"""
+        """Get ball radius, returns int."""
         return self.radius
 
     def invert_z_velocity(self):
-        """Invert the z component of the velocity"""
+        """Invert the z component of the velocity."""
         self.ball.vel.z *= -1.0
 
     def invert_x_velocity(self):
-        """Invert the x component of the velocity"""
+        """Invert the x component of the velocity."""
         self.ball.vel.x *= -1.0
 
     def has_speed(self):
+        """Returns True if ball still has speed."""
         return self.get_velocity().mag > 0
+
+    def collision(self, other):
+        """Appends other to collision list."""
+        self.collisions.append(other)
+
+    def get_collisions(self):
+        """Returns collision list."""
+        return self.collisions
+
+    def reset_collisions(self):
+        """Resets collision list."""
+        self.collisions = []
 
 
 class Collision:
@@ -174,33 +193,48 @@ class Collision:
         if -self.table.get_short_cushion() > self.ball.get_position().z - self.ball.get_radius() or self.ball.get_position().z + self.ball.get_radius() > self.table.get_short_cushion():
             self.ball.update(direction=-1)
             self.ball.invert_z_velocity()
+            self.ball.collision("CUSHION")
         # Als de ball long cushion raakt
         if self.ball.get_position().x + self.ball.get_radius() > self.table.get_long_cushion() or -self.table.get_long_cushion() > self.ball.get_position().x - self.ball.get_radius():  
             self.ball.update(direction=-1)
             self.ball.invert_x_velocity()
+            self.ball.collision("CUSHION")
 
     def vs_balls(self, balls):
         """Check for collisions between ball and all the balls. Adjust the velocity of both balls in the collisions and reverse the movement of the ball."""
         for ball in balls:
+
             if ball == self.ball:
                 continue
+
             distance = 2.0 * self.ball.get_radius()  # afstand om botsingen te controleren
             # diff = de vector tussen de twee bollen
+
             diff = ball.get_position() - self.ball.get_position()  # vector tussen de twee
             if mag(diff) < distance:
+
+                # register collision with both balls
+                # TO DO: these two lines seem to increase the likelyhood of a clipping ball
+                self.ball.collision(str(ball))
+                ball.collision(str(self.ball))
+
                 # vector loodrecht op de vector diff
                 dtan = rotate(diff, radians(90), vector(0, 1, 0))
+
                 # neem de twee snelheden
                 velocity_ball = ball.get_velocity()
                 velocity_self_ball = self.ball.get_velocity()
+
                 # draai de laatste tijdstap terug
                 ball.update(direction=-1)
                 self.ball.update(direction=-1)
+
                 # haal de lood- en raaklijnen op
                 velocity_ball_rad = proj(velocity_ball, diff)
                 velocity_ball_tan = proj(velocity_ball, dtan)
                 velocity_self_ball_rad = proj(velocity_self_ball, -diff)
                 velocity_self_ball_tan = proj(velocity_self_ball, dtan)
+
                 # draai de loodlijnen om en bewaar de raaklijnen
                 ball.set_velocity(velocity_self_ball_rad + velocity_ball_tan)
                 self.ball.set_velocity(velocity_ball_rad + velocity_self_ball_tan)
@@ -209,42 +243,71 @@ class Collision:
 class Cue:
 
     def __init__(self, power=5000, max_power=20000):
-        """Generate object to show direction and speed of cue-ball"""
+        """Generate object to show direction and speed of cue-ball."""
         self.rod = cylinder(pos = vector(0, 50, 0), axis = vector(1000, 0, 0),radius = 20, color = vector(139, 69, 19)/255)
         self.angle = 0
         self.power = power
         self.max_power = max_power
 
     def change_angle(self, direction, change=1):
-        """Change current angle for applying force to cue-ball, takes direction (-1 or 1) and change in degrees (default = 1)"""
+        """Change current angle for applying force to cue-ball, takes direction (-1 or 1) and change in degrees (default = 1)."""
         if direction not in [-1, 1]:
             raise ValueError
         self.angle = self.angle + direction * change
         self.angle %= 360
     
     def get_angle(self):
-        """Get current angle of cue-ball"""
+        """Get current angle of cue-ball."""
         return self.angle
 
     def change_power(self, direction, change=100):
-        """Change power of next shot, takes direction (-1 or 1) and change (cast to int)"""
+        """Change power of next shot, takes direction (-1 or 1) and change (cast to int)."""
         self.power = int(self.power + direction * change) 
         self.power = min(self.power, self.max_power)
         self.power = max(self.power, 0)
 
     def get_power(self):
-        """Get current power of cue-ball"""
+        """Get current power of cue-ball."""
         return self.power
 
     def new_velocity(self):
+        """Calculate the new velocity for the next shot."""
         rad = radians(cue.get_angle())
         return vector(cue.get_power() * cos(rad), 0, cue.get_power() * sin(rad))
 
     def visible(self):
+        """Turn cue visible."""
         self.rod.opacity = 1
 
     def invisible(self):
+        """Turn cue invisible."""
         self.rod.opacity = 0
+
+class Score:
+
+    def __init__(self):
+        pass
+
+    def hit_objects(self, objects, collisions):
+        """Return Bool if all objects are hit."""
+        set_collisions = set(collisions)
+        print("set:", set_collisions, "any:", [object in set_collisions for object in objects])
+        return all([object in set_collisions for object in objects])
+
+    def cushion_first(self, collisions):
+        """Returns bool if cushion was hit first"""
+        return collisions[0] == "CUSHION"
+
+    def n_cushions(self, objects, collisions, n):
+        """Returns bool if n cushions are hit before hitting last object in objects"""
+        if self.hit_objects(objects, collisions):
+            index = max(idx for idx, val in enumerate(collisions) if val in objects)
+            return collisions[:index].count("CUSHION") >= n
+        return False
+
+
+
+
 
 def keydown_func(evt):
     """This function is called each time a key is pressed."""
@@ -298,8 +361,8 @@ if __name__ == '__main__':
 
     # setting up canvas
     scene.background = 0.8 * vector(1, 1, 1)  # Lichtgrijs (0.8 van 1.0)
-    scene.width = 1680                         # Maak het 3D-scherm groter
-    scene.height = 1280
+    scene.width = 1280                         # Maak het 3D-scherm groter
+    scene.height = 720
     scene.bind('keydown', keydown_func)        # Functie voor toetsaanslagen
     # scene.bind('click', click_fun)            # Functie voor muiskliks
     scene.caption = """Hello World!"""
@@ -313,9 +376,9 @@ if __name__ == '__main__':
     
     # create staring positions for balls
     # TO DO: move to class for starting positions for libre
-    location_1 = (vector(-table_typen["Biljart"]["match"]["height"]//4, ballen_typen["Biljart"]["size"], table_typen["Biljart"]["match"]["acquit"]), WHITE)
-    location_2 = (vector(-table_typen["Biljart"]["match"]["height"]//4, ballen_typen["Biljart"]["size"], 0), YELLOW)
-    location_3 = (vector(table_typen["Biljart"]["match"]["height"]//4, ballen_typen["Biljart"]["size"], 0), RED)
+    location_1 = (vector(-table_typen["Biljart"]["match"]["height"]//4, ballen_typen["Biljart"]["size"], table_typen["Biljart"]["match"]["acquit"]), Color(colors[0]["color"], colors[0]["vector"]))
+    location_2 = (vector(-table_typen["Biljart"]["match"]["height"]//4, ballen_typen["Biljart"]["size"], 0), Color(colors[1]["color"], colors[1]["vector"]))
+    location_3 = (vector(table_typen["Biljart"]["match"]["height"]//4, ballen_typen["Biljart"]["size"], 0), Color(colors[2]["color"], colors[2]["vector"]))
     locations = [location_1, location_2, location_3]
 
     # create balls for libre
@@ -325,6 +388,8 @@ if __name__ == '__main__':
     # fix camera position, currently based on magic numbers!
     scene.camera.pos = vector(-28500, 6500, 0)
     scene.camera.axis = vector(28500, -6500, 0)
+    
+    score = Score()
 
     while True:
         
@@ -349,4 +414,15 @@ if __name__ == '__main__':
             if any(speed_vector):
                 cue.invisible()
             else:
+                for ball in balls:
+                    if len(ball.get_collisions()) > 0:
+                        print(ball.get_collisions())
+                        print("hit_objects:", score.hit_objects(["YELLOW", "RED"], ball.get_collisions()))
+                        print("Cushion first:", score.cushion_first(ball.get_collisions()))
+                        print("Cushion first:", score.cushion_first(ball.get_collisions()))
+                        print("Cushion 1 -  RED:", score.n_cushions(["RED"], ball.get_collisions(), 1))
+                        print("Cushion 1 -  YELLOW:", score.n_cushions(["YELLOW"], ball.get_collisions(), 1))
+                        print("Cushion 2 -  RED:", score.n_cushions(["RED"], ball.get_collisions(), 2))
+                        print("Cushion 2 -  YELLOW:", score.n_cushions(["YELLOW"], ball.get_collisions(), 2))
+                        ball.reset_collisions()
                 cue.visible()
