@@ -283,10 +283,8 @@ class Cue:
         """Turn cue invisible."""
         self.rod.opacity = 0
 
-class Score:
 
-    def __init__(self):
-        pass
+class Score:
 
     def hit_objects(self, objects, collisions):
         """Return Bool if all objects are hit."""
@@ -305,6 +303,37 @@ class Score:
             return collisions[:index].count("CUSHION") >= n
         return False
 
+class LibreScore(Score):
+
+    def __init__(self, players, objects, points, turns=20):
+        super().__init__()
+        self.players = players
+        self.score = {player: 0 for player in players}
+        self.turns = turns
+        self.turn = 1
+        self.objects = [objects]
+        self.points = points
+
+    def __repr__(self):
+        s = ""
+        for player in self.players:
+            s += f"{player}: {self.score[player]}, "
+        s += f"turn: {self.turn}"
+        return s
+
+    def next_turn(self):
+        self.turn += 1
+
+    def get_turn(self):
+        return self.turn
+
+    def get_player_score(self, player):
+        return self.score[player]
+
+    def score_shot(self, player, collisions):
+        for object in self.objects:
+            if self.hit_objects(object, collisions):
+                self.score[player] = self.score[player] + self.points
 
 
 
@@ -386,10 +415,10 @@ if __name__ == '__main__':
     cue = Cue()
 
     # fix camera position, currently based on magic numbers!
-    scene.camera.pos = vector(-28500, 6500, 0)
-    scene.camera.axis = vector(28500, -6500, 0)
+    scene.camera.pos = vector(-22000, 6500, 0)
+    scene.camera.axis = vector(22000, -6500, 0)
     
-    score = Score()
+    score = LibreScore(["Reijer"], ["YELLOW", "RED"], 1)
 
     while True:
         
@@ -416,13 +445,15 @@ if __name__ == '__main__':
             else:
                 for ball in balls:
                     if len(ball.get_collisions()) > 0:
-                        print(ball.get_collisions())
-                        print("hit_objects:", score.hit_objects(["YELLOW", "RED"], ball.get_collisions()))
-                        print("Cushion first:", score.cushion_first(ball.get_collisions()))
-                        print("Cushion first:", score.cushion_first(ball.get_collisions()))
-                        print("Cushion 1 -  RED:", score.n_cushions(["RED"], ball.get_collisions(), 1))
-                        print("Cushion 1 -  YELLOW:", score.n_cushions(["YELLOW"], ball.get_collisions(), 1))
-                        print("Cushion 2 -  RED:", score.n_cushions(["RED"], ball.get_collisions(), 2))
-                        print("Cushion 2 -  YELLOW:", score.n_cushions(["YELLOW"], ball.get_collisions(), 2))
+                        score.score_shot("Reijer", ball.get_collisions())
+                        print(score)
+                        # print(ball.get_collisions())
+                        # print("hit_objects:", score.hit_objects(["YELLOW", "RED"], ball.get_collisions()))
+                        # print("Cushion first:", score.cushion_first(ball.get_collisions()))
+                        # print("Cushion first:", score.cushion_first(ball.get_collisions()))
+                        # print("Cushion 1 -  RED:", score.n_cushions(["RED"], ball.get_collisions(), 1))
+                        # print("Cushion 1 -  YELLOW:", score.n_cushions(["YELLOW"], ball.get_collisions(), 1))
+                        # print("Cushion 2 -  RED:", score.n_cushions(["RED"], ball.get_collisions(), 2))
+                        # print("Cushion 2 -  YELLOW:", score.n_cushions(["YELLOW"], ball.get_collisions(), 2))
                         ball.reset_collisions()
                 cue.visible()
