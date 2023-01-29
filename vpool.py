@@ -333,8 +333,7 @@ class Collision:
             if ball == self.ball:
                 continue
 
-            distance = 2.0 * self.ball.get_radius()  # afstand om botsingen te controleren
-            # diff = de vector tussen de twee bollen
+            distance = 2.0 * self.ball.get_radius()  # Distance between point representation of balls
 
             diff = ball.get_position() - self.ball.get_position()  # vector tussen de twee
             if mag(diff) < distance:
@@ -344,24 +343,24 @@ class Collision:
                 self.ball.collision(str(ball))
                 ball.collision(str(self.ball))
 
-                # vector loodrecht op de vector diff
+                # Vector perpendicular to vector diff
                 dtan = rotate(diff, radians(90), vector(0, 1, 0))
 
                 # neem de twee snelheden
                 velocity_ball = ball.get_velocity()
                 velocity_self_ball = self.ball.get_velocity()
 
-                # draai de laatste tijdstap terug
+                # Turn back time one step
                 ball.update(direction=-1)
                 self.ball.update(direction=-1)
 
-                # haal de lood- en raaklijnen op
+                # get perpendicular and tangent line
                 velocity_ball_rad = proj(velocity_ball, diff)
                 velocity_ball_tan = proj(velocity_ball, dtan)
                 velocity_self_ball_rad = proj(velocity_self_ball, -diff)
                 velocity_self_ball_tan = proj(velocity_self_ball, dtan)
 
-                # draai de loodlijnen om en bewaar de raaklijnen
+                # rotate perpendicular lines and keep tangent lines
                 ball.set_velocity(velocity_self_ball_rad + velocity_ball_tan)
                 self.ball.set_velocity(velocity_ball_rad + velocity_self_ball_tan)
 
