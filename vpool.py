@@ -382,6 +382,23 @@ def keydown_func(evt):
         for ball in game.get_balls():
             ball.set_velocity(vector(0, 0, 0))
 
+class GameState:
+
+    def __init__(self):
+        # Program State
+        self.menu = False
+        self.game = True
+
+        # Turn states
+        self.shot = False
+        self.moving_balls = False
+        self.point = False
+
+    def reset_game_state(self):
+        self.shot = False
+        self.moving_balls = False
+        self.point = False
+
 
 class Game:
 
@@ -391,6 +408,8 @@ class Game:
         self.cue = cue
         self.score = score
 
+        self.game_state = GameState()
+
         self.players = players
         self.current_player = self.players[0]
         self.objectives = objectives
@@ -398,32 +417,68 @@ class Game:
         self.cueballs = cueballs
         self.current_cueball = self.cueballs[0]
 
-    def game_loop(self):
-        """Start the game loop."""
-        shot = False
+    def prog_loop(self):
+
         while True:
             rate(RATE)
-            self.place_cue()
-            moving_balls = self.balls_update()
-            if moving_balls:
-                self.cue.invisible()
-                shot = True
-            if shot and not moving_balls:
-                if len(self.current_cueball.get_collisions()) > 0:
-                    # TO DO: work out current_objective and extra brackets 
-                    point = self.score.score_shot(self.current_player, [self.current_objective['Objectives']['Objective']], self.current_cueball.get_collisions())
-                scene.caption = f"""{score}"""
-                if not point:
-                    self.next_turn()
-                    self.next_player()
-                    self.next_objective()
-                    self.next_cueball()
+            if self.game_state.menu:
+                self.menu_loop()
+            if self.game_state.game:
+                self.game_loop()
 
-                self.reset_collision_balls()
-                self.place_cue()
-                self.cue.visible()
-                shot = False
-                point = False
+    def menu_loop():
+        pass
+
+    def game_loop(self):
+        """Start the game loop."""
+        self.place_cue()
+
+        self.balls_update()
+        self.game_state.moving_balls = self.moving_balls()
+
+        if self.game_state.moving_balls:
+            self.cue.invisible()
+            self.game_state.shot = True
+        
+        if self.game_state.shot and not self.game_state.moving_balls:
+            print("hello")
+            self.game_state.point = self.score_points()
+            print(self.game_state.point)
+
+            if not self.game_state.point:
+                self.change_player()
+        
+            self.setup_turn()
+
+            self.game_state.shot = False
+            self.game_state.point = False
+
+        scene.caption = f"""{score}""" # move to scene class?
+
+    def setup_turn(self):
+        self.reset_collision_balls()
+        self.place_cue()
+        self.cue.visible()
+
+    def balls_update(self):
+        for ball in self.balls:
+            ball.update()                             # move ball to next position
+            c_detector = Collision(self.table, ball)  # check for collisions with objects
+            c_detector.vs_table()
+            c_detector.vs_balls(self.balls)
+
+    def score_points(self):
+        point = False
+        if len(self.current_cueball.get_collisions()) > 0:
+            # TO DO: work out current_objective and extra brackets 
+            point = self.score.score_shot(self.current_player, [self.current_objective['Objectives']['Objective']], self.current_cueball.get_collisions())
+        return point
+
+    def change_player(self):
+        self.next_turn()
+        self.next_player()
+        self.next_objective()
+        self.next_cueball()
 
     def place_cue(self):
         # draw direction vector at current position
@@ -433,6 +488,9 @@ class Game:
     def reset_collision_balls(self):
         for ball in self.balls:
             ball.reset_collisions()
+
+    def moving_balls(self):
+        return any([ball.has_speed() for ball in self.balls])
 
     def next_object(self, current_object, objects):
         """"""
@@ -455,21 +513,6 @@ class Game:
     def next_turn(self):
         if (players.index(self.current_player) + 1) // len(self.players):
             self.score.next_turn()
-
-    def balls_update(self):
-        moving_balls = []
-
-        for ball in self.balls:
-            ball.update()                         # move ball to next position
-            self.check_collision(ball)            # check for collisions with objects
-            moving_balls.append(ball.has_speed())
-
-        return any(moving_balls)
-
-    def check_collision(self, ball):
-        c_detector = Collision(self.table, ball)
-        c_detector.vs_table()
-        c_detector.vs_balls(self.balls)
 
     def get_cueball(self):
         return self.current_cueball
@@ -540,4 +583,4 @@ if __name__ == '__main__':
     score = LibreScore(players, points)
 
     game = Game(table, balls, cue, score, players, objectives, cueballs)
-    game.game_loop()
+    game.prog_loop()
