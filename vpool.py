@@ -25,7 +25,6 @@ class Game:
         self.balls = self.create_balls()
         self.current_player = self.players[0]
         self.objectives = [goal["Combinations"] for goal in libre["goals"]]
-        print(self.objectives)
         self.current_objective = self.objectives[0]
         self.cueballs = [self.balls[idx] for idx in range(len(self.balls)) if libre["balls"]["cueballs"][idx]]
         self.current_cueball = self.cueballs[0]
@@ -63,9 +62,7 @@ class Game:
             self.game_state.shot = True
         
         if self.game_state.shot and not self.game_state.moving_balls:
-            print("hello")
             self.game_state.point = self.score_points()
-            print(self.game_state.point)
 
             if not self.game_state.point:
                 self.change_player()
