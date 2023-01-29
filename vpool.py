@@ -1,16 +1,164 @@
 from vpython import *
 
-class Color:
 
-    def __init__(self, color, vec):
-        self.color = color
-        self.vec = vec
+class Game:
 
-    def __repr__(self):
-        return self.color
+    def __init__(self, rate):
+        self.table = Table(settings["table"]["height"], settings["table"]["width"], settings["table"]["cushion"])
+        self.cue = settings["cue"]()
+        self.game_state = settings["game_state"]()
+        self.rate = rate
+        self.dT = 1.0/self.rate
 
-    def rgb(self):
-        return self.vec
+        self.score = None
+        self.balls = None
+        self.players = None
+        self.current_player = None
+        self.objectives = None
+        self.current_objective = None
+        self.cueballs = None
+        self.current_cueball = None
+
+    def create_libre(self):
+        self.players = ["Player 1", "Player 2"]
+        self.score = libre["score"](self.players)
+        self.balls = self.create_balls()
+        self.current_player = self.players[0]
+        self.objectives = [goal["Combinations"] for goal in libre["goals"]]
+        print(self.objectives)
+        self.current_objective = self.objectives[0]
+        self.cueballs = [self.balls[idx] for idx in range(len(self.balls)) if libre["balls"]["cueballs"][idx]]
+        self.current_cueball = self.cueballs[0]
+
+    def create_balls(self):
+            # def __init__(self, radius, color, location, dt):
+        radius = settings["ball_size"]
+        klass = libre["balls"]["klass"]
+        locations = libre["balls"]["start_locations"]
+        colors = libre["balls"]["colors"]
+        return [klass(radius, Color(colors[idx]["color"], colors[idx]["vector"]), location, self.dT) for idx, location in enumerate(locations)]
+
+    def prog_loop(self):
+
+        while True:
+            rate(self.rate)
+            if self.game_state.menu:
+                self.menu_loop()
+                self.game_state.menu, self.game_state.game = self.game_state.game, self.game_state.menu
+            if self.game_state.game:
+                self.game_loop()
+
+    def menu_loop(self):
+        self.create_libre()
+
+    def game_loop(self):
+        """Start the game loop."""
+        self.place_cue()
+
+        self.balls_update()
+        self.game_state.moving_balls = self.moving_balls()
+
+        if self.game_state.moving_balls:
+            self.cue.invisible()
+            self.game_state.shot = True
+        
+        if self.game_state.shot and not self.game_state.moving_balls:
+            print("hello")
+            self.game_state.point = self.score_points()
+            print(self.game_state.point)
+
+            if not self.game_state.point:
+                self.change_player()
+        
+            self.setup_turn()
+
+            self.game_state.shot = False
+            self.game_state.point = False
+
+        scene.caption = f"""{self.score}""" # move to scene class?
+
+    def setup_turn(self):
+        self.reset_collision_balls()
+        self.place_cue()
+        self.cue.visible()
+
+    def balls_update(self):
+        for ball in self.balls:
+            ball.update()                             # move ball to next position
+            c_detector = Collision(self.table, ball)  # check for collisions with objects
+            c_detector.vs_table()
+            c_detector.vs_balls(self.balls)
+
+    def score_points(self):
+        point = False
+        if len(self.current_cueball.get_collisions()) > 0:
+            point = self.score.score_shot(self.current_player, self.current_objective, self.current_cueball.get_collisions())
+        return point
+
+    def change_player(self):
+        self.next_turn()
+        self.next_player()
+        self.next_objective()
+        self.next_cueball()
+
+    def place_cue(self):
+        # draw direction vector at current position
+        self.cue.rod.axis = self.cue.new_velocity()
+        self.cue.rod.pos = self.current_cueball.get_position()
+
+    def reset_collision_balls(self):
+        for ball in self.balls:
+            ball.reset_collisions()
+
+    def moving_balls(self):
+        return any([ball.has_speed() for ball in self.balls])
+
+    def next_object(self, current_object, objects):
+        """"""
+        current_object_index = objects.index(current_object)
+        new_objective_index = (current_object_index + 1) % len(objects)
+        return objects[new_objective_index]
+
+    def next_player(self):
+        """Determine next player."""
+        self.current_player = self.next_object(self.current_player, self.players)
+
+    def next_objective(self):
+        """Determines next objective, for Libre the objective should alternate in an odd player game."""
+        self.current_objective = self.next_object(self.current_objective, self.objectives)
+
+    def next_cueball(self):
+        """Determines next cueball."""
+        self.current_cueball = self.next_object(self.current_cueball, self.cueballs)
+
+    def next_turn(self):
+        if (players.index(self.current_player) + 1) // len(self.players):
+            self.score.next_turn()
+
+    def stop_balls(self):
+        for ball in self.balls:
+            ball.set_velocity(vector(0, 0, 0))
+
+    def get_cueball(self):
+        return self.current_cueball
+
+
+class GameState:
+
+    def __init__(self):
+        # Program State
+        self.menu = True
+        self.game = False
+
+        # Turn states
+        self.shot = False
+        self.moving_balls = False
+        self.point = False
+
+    def reset_game_state(self):
+        self.shot = False
+        self.moving_balls = False
+        self.point = False
 
 
 class Table:
@@ -235,8 +383,8 @@ class Cue:
 
     def new_velocity(self):
         """Calculate the new velocity for the next shot."""
-        rad = radians(cue.get_angle())
-        return vector(cue.get_power() * cos(rad), 0, cue.get_power() * sin(rad))
+        rad = radians(self.get_angle())
+        return vector(self.get_power() * cos(rad), 0, self.get_power() * sin(rad))
 
     def visible(self):
         """Turn cue visible."""
@@ -245,6 +393,19 @@ class Cue:
     def invisible(self):
         """Turn cue invisible."""
         self.rod.opacity = 0
+
+
+class Color:
+
+    def __init__(self, color, vec):
+        self.color = color
+        self.vec = vec
+
+    def __repr__(self):
+        return self.color
+
+    def rgb(self):
+        return self.vec
 
 
 class Score:
@@ -268,13 +429,12 @@ class Score:
 
 class LibreScore(Score):
 
-    def __init__(self, players, points, turns=20):
+    def __init__(self, players, turns=20):
         super().__init__()
         self.players = players
         self.score = {player: 0 for player in players}
         self.turns = turns
         self.turn = 1
-        self.points = points
 
     def __repr__(self):
         s = "Current score:\n"
@@ -293,156 +453,11 @@ class LibreScore(Score):
         return self.score[player]
 
     def score_shot(self, player, objectives, collisions):
-        for objective in objectives:
-            if self.hit_objective(objective, collisions):
-                self.score[player] = self.score[player] + self.points
-                return True
+        if self.hit_objective(objectives["Combination"], collisions):
+            self.score[player] = self.score[player] + objectives["Points"]
+            return True
         return False
 
-
-
-
-
-class GameState:
-
-    def __init__(self):
-        # Program State
-        self.menu = False
-        self.game = True
-
-        # Turn states
-        self.shot = False
-        self.moving_balls = False
-        self.point = False
-
-    def reset_game_state(self):
-        self.shot = False
-        self.moving_balls = False
-        self.point = False
-
-
-class Game:
-
-    def __init__(self, table, balls, cue, score, players, objectives, cueballs):
-        self.table = table
-        self.balls = balls
-        self.cue = cue
-        self.score = score
-        self.game_state = GameState()
-
-        self.players = players
-        self.current_player = self.players[0]
-        self.objectives = objectives
-        self.current_objective = self.objectives[0]
-        self.cueballs = cueballs
-        self.current_cueball = self.cueballs[0]
-
-    def prog_loop(self):
-
-        while True:
-            rate(RATE)
-            if self.game_state.menu:
-                self.menu_loop()
-            if self.game_state.game:
-                self.game_loop()
-
-    def menu_loop():
-        pass
-
-    def game_loop(self):
-        """Start the game loop."""
-        self.place_cue()
-
-        self.balls_update()
-        self.game_state.moving_balls = self.moving_balls()
-
-        if self.game_state.moving_balls:
-            self.cue.invisible()
-            self.game_state.shot = True
-        
-        if self.game_state.shot and not self.game_state.moving_balls:
-            print("hello")
-            self.game_state.point = self.score_points()
-            print(self.game_state.point)
-
-            if not self.game_state.point:
-                self.change_player()
-        
-            self.setup_turn()
-
-            self.game_state.shot = False
-            self.game_state.point = False
-
-        scene.caption = f"""{score}""" # move to scene class?
-
-    def setup_turn(self):
-        self.reset_collision_balls()
-        self.place_cue()
-        self.cue.visible()
-
-    def balls_update(self):
-        for ball in self.balls:
-            ball.update()                             # move ball to next position
-            c_detector = Collision(self.table, ball)  # check for collisions with objects
-            c_detector.vs_table()
-            c_detector.vs_balls(self.balls)
-
-    def score_points(self):
-        point = False
-        if len(self.current_cueball.get_collisions()) > 0:
-            # TO DO: work out current_objective and extra brackets 
-            point = self.score.score_shot(self.current_player, [self.current_objective['Objectives']['Objective']], self.current_cueball.get_collisions())
-        return point
-
-    def change_player(self):
-        self.next_turn()
-        self.next_player()
-        self.next_objective()
-        self.next_cueball()
-
-    def place_cue(self):
-        # draw direction vector at current position
-        self.cue.rod.axis = self.cue.new_velocity()
-        self.cue.rod.pos = self.current_cueball.get_position()
-
-    def reset_collision_balls(self):
-        for ball in self.balls:
-            ball.reset_collisions()
-
-    def moving_balls(self):
-        return any([ball.has_speed() for ball in self.balls])
-
-    def next_object(self, current_object, objects):
-        """"""
-        current_object_index = objects.index(current_object)
-        new_objective_index = (current_object_index + 1) % len(objects)
-        return objects[new_objective_index]
-
-    def next_player(self):
-        """Determine next player."""
-        self.current_player = self.next_object(self.current_player, self.players)
-
-    def next_objective(self):
-        """Determines next objective, for Libre the objective should alternate in an odd player game."""
-        self.current_objective = self.next_object(self.current_objective, self.objectives)
-
-    def next_cueball(self):
-        """Determines next cueball."""
-        self.current_cueball = self.next_object(self.current_cueball, self.cueballs)
-
-    def next_turn(self):
-        if (players.index(self.current_player) + 1) // len(self.players):
-            self.score.next_turn()
-
-    def stop_balls(self):
-        for ball in self.balls:
-            ball.set_velocity(vector(0, 0, 0))
-
-    def get_cueball(self):
-        return self.current_cueball
-
-    # def get_balls(self):
-    #     return self.balls
 
 def keydown_func(evt):
     map = {
@@ -473,50 +488,83 @@ def keydown_func(evt):
             map[key]['func'](*map[key]['args'])
 
 
-# Sizes in tenths of milimeters
-table_typen = {
-    "Biljart": {
-        "match": {
-            "height": 28400,
-            "width": 14200,
-            "acquit": 1825,
-            "cushion": 370,
-        },
+settings = {
+    "table": {
+        "height": 28400,
+        "width": 14200,
+        "acquit": 1825,
+        "cushion": 370,
     },
+    "cue": Cue,
+    "game_state": GameState,
+    "ball_size": 615 // 2,
 }
 
-colors = [
-    {"color": "WHITE", "vector": vector(255/255, 255/255, 255/255)},  
-    {"color": "YELLOW", "vector": vector(255/255, 255/255, 0)},
-    {"color": "RED", "vector": vector(255/255, 0, 0)},
-]
-
-# Sizes in tenths of milimeters
-ballen_typen = {
-    "Biljart": {
-        "size": 615 // 2
+libre = {
+    "balls": {
+        "klass": Ball,
+        "cueballs": [True, True, False],
+        "colors": [
+            {"color": "WHITE", "vector": vector(255/255, 255/255, 255/255)},
+            {"color": "YELLOW", "vector": vector(255/255, 255/255, 0)},
+            {"color": "RED", "vector": vector(255/255, 0, 0)},
+        ],
+        "start_locations": [
+            vector(-settings["table"]["height"] // 4, settings["ball_size"], settings["table"]["acquit"]),
+            vector(-settings["table"]["height"] // 4, settings["ball_size"], 0),
+            vector(settings["table"]["height"] // 4, settings["ball_size"], 0),
+        ],
     },
+    "goals": [
+        {
+            "Cueball": "WHITE", 
+            "Combinations": 
+                {
+                    "Combination": ["YELLOW", "RED"], 
+                    "Points": 1
+                },
+        },{
+            "Cueball": "YELLOW", 
+            "Combinations": 
+                {
+                    "Combination": ["WHITE", "RED"], 
+                    "Points": 1
+                },
+        }
+    ],
+    "score": LibreScore
 }
 
-players = ["Player 1", "Player 2"]
-points = 1
-objectives = [
-    {
-        "Cueball": "WHITE", 
-        "Objectives": 
-            {
-                "Objective": ["YELLOW", "RED"], 
-                "Points": 1
-            },
-    },{
-        "Cueball": "YELLOW", 
-        "Objectives": 
-            {
-                "Objective": ["WHITE", "RED"], 
-                "Points": 1
-            },
-    }
-]
+
+# class Menu:
+
+#     menu_texts = {
+#         "intro": "Welkom bij VPool\n",
+#         "help": """
+#             \nThe 'cue' give the direction and power of the shot. The angle can be adjusted
+#             clockwise: 'D' by 0.1 degree, 'd' by one degree, 'e' by 10 degrees and 'E' by 
+#             90 degrees; or counterclockwise: 'A' by 0.1 degree, 'a' by one degree, 'q' by 
+#             10 degrees and Q by 90 degrees. The power of the shot can be adjusted by: 'w' 
+#             for increase or 's' for decrease, 'W' and 'S' will do a 10 fold jump. To take 
+#             a shot press 'space bar'. The cueball can be stopped by pressing 'z' or 'x' for 
+#             all balls.
+#             'h' will toggle display of the instructions. 'm' will quit the game to the menu.
+#         """,
+#         "libre": """
+#             \nGame rules:
+#             Players take turns and try to hit the other two balls with their cueball. Making
+#             this carambool will result in a point. The player with the most points after 20
+#             turns wil win the game.
+#         """
+# }
+
+#     def __init__(self):
+#         self.intro = False
+#         self.help = False
+#         self.libre = False
+
+#     def get_caption(self, extra_text):
+#         return f"""{menu_texts['intro'] if self.intro}{menu_texts['help'] if self.intro}{menu_texts['intro'] if self.intro}"""
 
 
 if __name__ == '__main__':
@@ -526,7 +574,8 @@ if __name__ == '__main__':
     # setting up canvas
     scene.background = 0.8 * vector(1, 1, 1)  # Lichtgrijs (0.8 van 1.0)
     scene.width = 1280                         # Maak het 3D-scherm groter
-    scene.height = 720
+    scene.height = 700
+    scene.title = 'VPool'
     scene.caption = """Hello World!"""
     scene.bind('keydown', keydown_func)        # Functie voor toetsaanslagen
 
@@ -536,28 +585,7 @@ if __name__ == '__main__':
 
     # Constants
     RATE=30
-    dT = 1.0/RATE
-
-    # create table object
-    table = Table(table_typen["Biljart"]["match"]["height"], table_typen["Biljart"]["match"]["width"], table_typen["Biljart"]["match"]["cushion"])
-    
-    # create staring positions for balls
-    # TO DO: move to class for starting positions for libre
-    location_1 = (vector(-table_typen["Biljart"]["match"]["height"]//4, ballen_typen["Biljart"]["size"], table_typen["Biljart"]["match"]["acquit"]), Color(colors[0]["color"], colors[0]["vector"]))
-    location_2 = (vector(-table_typen["Biljart"]["match"]["height"]//4, ballen_typen["Biljart"]["size"], 0), Color(colors[1]["color"], colors[1]["vector"]))
-    location_3 = (vector(table_typen["Biljart"]["match"]["height"]//4, ballen_typen["Biljart"]["size"], 0), Color(colors[2]["color"], colors[2]["vector"]))
-    locations = [location_1, location_2, location_3]
-
-    # create balls for libre
-    balls = [Ball(ballen_typen["Biljart"]["size"], loc[1], loc[0], dT) for loc in locations]
-    cueballs = [balls[0], balls[1]]
-    cue = Cue()
-
-    # Create scoring class
-    score = LibreScore(players, points)
-
-    # Create Game
-    game = Game(table, balls, cue, score, players, objectives, cueballs)
+    game = Game(RATE)
 
     # start Game
     game.prog_loop()
