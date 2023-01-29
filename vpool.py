@@ -1,46 +1,5 @@
 from vpython import *
 
-import logging
-import logging.config
-
-# Sizes in tenths of milimeters
-table_typen = {
-    "Biljart": {
-        "match": {
-            "height": 28400,
-            "width": 14200,
-            "acquit": 1825,
-            "cushion": 370,
-        },
-    },
-}
-
-# games = {
-#     "Libre": {
-        
-#         "start_pos": {
-#             "White": {
-#                 "color": vector(.8, .8, .8),
-#                 "location": vector()
-#             }
-#         }
-#     }
-# }
-
-colors = [
-    {"color": "WHITE", "vector": vector(255/255, 255/255, 255/255)},  
-    {"color": "YELLOW", "vector": vector(255/255, 255/255, 0)},
-    {"color": "RED", "vector": vector(255/255, 0, 0)},
-]
-
-# Sizes in tenths of milimeters
-ballen_typen = {
-    "Biljart": {
-        "size": 615 // 2
-    },
-}
-
-
 class Color:
 
     def __init__(self, color, vec):
@@ -341,46 +300,8 @@ class LibreScore(Score):
         return False
 
 
-def keydown_func(evt):
-    """This function is called each time a key is pressed."""
-    key = evt.key
 
-    # define keys to change power (w and s), angle (a, q and d, e)
-    if key in 'w':
-        cue.change_power(1)              # increase power
-    elif key in 'W':
-        cue.change_power(1, 1000)        # big increase power
-    elif key in 's':
-        cue.change_power(-1)             # decrease power
-    elif key in 'S':
-        cue.change_power(-1, 1000)       # big decrease power
 
-    elif  key in 'a':
-        cue.change_angle(-1)             # change angle counterclockwise
-    elif  key in 'A':
-        cue.change_angle(-1, 0.1)        # small change angle counterclockwise
-    elif  key in 'q':
-        cue.change_angle(-1, 10)         # big change angle counterclockwise
-    elif  key in 'Q':
-        cue.change_angle(-1, 90)         # huge change angle counterclockwise
-
-    elif key in 'd':
-        cue.change_angle(1)             # change angle clockwise
-    elif key in 'D':
-        cue.change_angle(1, 0.1)        # small change angle clockwise
-    elif key in 'e':
-        cue.change_angle(1, 10)         # big change angle clockwise
-    elif key in 'E':
-        cue.change_angle(1, 90)         # huge change angle clockwise
-
-    elif key in ' ':                    # shoot cue-ball in given direction
-        game.get_cueball().set_velocity(cue.new_velocity())
-        
-    elif key in 'z':                    # sets velocity of cueball to zero
-        game.get_cueball().set_velocity(vector(0, 0, 0))
-    elif key in 'x':                    # sets velocity of all balls to zero
-        for ball in game.get_balls():
-            ball.set_velocity(vector(0, 0, 0))
 
 class GameState:
 
@@ -407,7 +328,6 @@ class Game:
         self.balls = balls
         self.cue = cue
         self.score = score
-
         self.game_state = GameState()
 
         self.players = players
@@ -514,28 +434,101 @@ class Game:
         if (players.index(self.current_player) + 1) // len(self.players):
             self.score.next_turn()
 
+    def stop_balls(self):
+        for ball in self.balls:
+            ball.set_velocity(vector(0, 0, 0))
+
     def get_cueball(self):
         return self.current_cueball
 
-    def get_balls(self):
-        return self.balls
+    # def get_balls(self):
+    #     return self.balls
+
+def keydown_func(evt):
+    map = {
+            'w': {'bools': [game.game_state.game], 'func': game.cue.change_power, 'args': (1,)},
+            'W': {'bools': [game.game_state.game], 'func': game.cue.change_power, 'args': (1, 1000)},
+            's': {'bools': [game.game_state.game], 'func': game.cue.change_power, 'args': (-1,)},
+            'S': {'bools': [game.game_state.game], 'func': game.cue.change_power, 'args': (-1, 1000)},
+
+            'a': {'bools': [game.game_state.game], 'func': game.cue.change_angle, 'args': (-1,)},
+            'A': {'bools': [game.game_state.game], 'func': game.cue.change_angle, 'args': (-1, 0.1)},
+            'q': {'bools': [game.game_state.game], 'func': game.cue.change_angle, 'args': (-1, 10)},
+            'Q': {'bools': [game.game_state.game], 'func': game.cue.change_angle, 'args': (-1, 90)},
+
+            'd': {'bools': [game.game_state.game], 'func': game.cue.change_angle, 'args': (1,)},
+            'D': {'bools': [game.game_state.game], 'func': game.cue.change_angle, 'args': (1, 0.1)},
+            'e': {'bools': [game.game_state.game], 'func': game.cue.change_angle, 'args': (1, 10)},
+            'E': {'bools': [game.game_state.game], 'func': game.cue.change_angle, 'args': (1, 90)},
+
+            ' ': {'bools': [game.game_state.game], 'func': game.get_cueball().set_velocity, 'args': (game.cue.new_velocity(),)},
+            'z': {'bools': [game.game_state.game], 'func': game.get_cueball().set_velocity, 'args': (vector(0, 0, 0),)},
+            'x': {'bools': [game.game_state.game], 'func': game.stop_balls, 'args': ()},    
+        }
+
+    key = evt.key
+
+    if key in map.keys():
+        if all([bool for bool in map[key]['bools']]):
+            map[key]['func'](*map[key]['args'])
+
+
+# Sizes in tenths of milimeters
+table_typen = {
+    "Biljart": {
+        "match": {
+            "height": 28400,
+            "width": 14200,
+            "acquit": 1825,
+            "cushion": 370,
+        },
+    },
+}
+
+colors = [
+    {"color": "WHITE", "vector": vector(255/255, 255/255, 255/255)},  
+    {"color": "YELLOW", "vector": vector(255/255, 255/255, 0)},
+    {"color": "RED", "vector": vector(255/255, 0, 0)},
+]
+
+# Sizes in tenths of milimeters
+ballen_typen = {
+    "Biljart": {
+        "size": 615 // 2
+    },
+}
+
+players = ["Player 1", "Player 2"]
+points = 1
+objectives = [
+    {
+        "Cueball": "WHITE", 
+        "Objectives": 
+            {
+                "Objective": ["YELLOW", "RED"], 
+                "Points": 1
+            },
+    },{
+        "Cueball": "YELLOW", 
+        "Objectives": 
+            {
+                "Objective": ["WHITE", "RED"], 
+                "Points": 1
+            },
+    }
+]
+
 
 if __name__ == '__main__':
     # notes:
     # snelheden: 35 km/h => 10 m/s => 10000 mm / s => 30000 mm / (1/30 s)
 
-    # Set up logging
-    # logger = logging.getLogger(__name__)
-    # logging.config.fileConfig('logging.ini')
-    # logger.warning("Setting up Vpool")
-
     # setting up canvas
     scene.background = 0.8 * vector(1, 1, 1)  # Lichtgrijs (0.8 van 1.0)
     scene.width = 1280                         # Maak het 3D-scherm groter
     scene.height = 720
-    scene.bind('keydown', keydown_func)        # Functie voor toetsaanslagen
-    # scene.bind('click', click_fun)            # Functie voor muiskliks
     scene.caption = """Hello World!"""
+    scene.bind('keydown', keydown_func)        # Functie voor toetsaanslagen
 
     # fix camera position, currently based on magic numbers!
     scene.camera.pos = vector(-22000, 6500, 0)
@@ -557,30 +550,14 @@ if __name__ == '__main__':
 
     # create balls for libre
     balls = [Ball(ballen_typen["Biljart"]["size"], loc[1], loc[0], dT) for loc in locations]
+    cueballs = [balls[0], balls[1]]
     cue = Cue()
 
     # Create scoring class
-    players = ["Player 1", "Player 2"]
-    objectives = [
-        {
-            "Cueball": "WHITE", 
-            "Objectives": 
-                {
-                    "Objective": ["YELLOW", "RED"], 
-                    "Points": 1
-                },
-        },{
-            "Cueball": "YELLOW", 
-            "Objectives": 
-                {
-                    "Objective": ["WHITE", "RED"], 
-                    "Points": 1
-                },
-        }
-    ]
-    cueballs = [balls[0], balls[1]]
-    points = 1
     score = LibreScore(players, points)
 
+    # Create Game
     game = Game(table, balls, cue, score, players, objectives, cueballs)
+
+    # start Game
     game.prog_loop()
