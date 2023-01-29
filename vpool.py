@@ -132,7 +132,7 @@ class Game:
         self.current_cueball = self.next_object(self.current_cueball, self.cueballs)
 
     def next_turn(self):
-        if (players.index(self.current_player) + 1) // len(self.players):
+        if (self.players.index(self.current_player) + 1) // len(self.players):
             self.score.next_turn()
 
     def stop_balls(self):
