@@ -22,6 +22,7 @@ The project requires several libraries to function. Please install them:
 
 # Change to milestone-branch
 
+Further development will happen on the main-branch, so please checkout the milestone-branch
 ```git checkout milestone```
 
 # Starting the application
