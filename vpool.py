@@ -3,7 +3,7 @@ from vpython import *
 
 class Game:
 
-    def __init__(self, rate, settings):
+    def __init__(self, rate, settings, libre):
         """Setup up the game, takes rate (int), settings (dict) and libre (dict)."""
         self.table = Table(settings["table"]["height"], settings["table"]["width"], settings["table"]["cushion"])
         self.cue = settings["cue"]()

@@ -2,7 +2,7 @@
 
 Setup up an environment:  
 
-```python3 -m env ./env```
+```python3 -m venv ./env```
 
 and activate it:  
 
@@ -19,6 +19,10 @@ Clone the repository:
 The project requires several libraries to function. Please install them:  
 
 ```pip install -r requirements.txt```
+
+# Change to milestone-branch
+
+```git checkout milestone```
 
 # Starting the application
 
