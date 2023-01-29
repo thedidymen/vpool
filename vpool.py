@@ -3,7 +3,8 @@ from vpython import *
 
 class Game:
 
-    def __init__(self, rate):
+    def __init__(self, rate, settings):
+        """Setup up the game, takes rate (int), settings (dict) and libre (dict)."""
         self.table = Table(settings["table"]["height"], settings["table"]["width"], settings["table"]["cushion"])
         self.cue = settings["cue"]()
         self.game_state = settings["game_state"]()
@@ -20,6 +21,7 @@ class Game:
         self.current_cueball = None
 
     def create_libre(self):
+        """Sets up the Libre game."""
         self.players = ["Player 1", "Player 2"]
         self.score = libre["score"](self.players)
         self.balls = self.create_balls()
@@ -30,7 +32,7 @@ class Game:
         self.current_cueball = self.cueballs[0]
 
     def create_balls(self):
-            # def __init__(self, radius, color, location, dt):
+        """Sets up the ball required for the game."""
         radius = settings["ball_size"]
         klass = libre["balls"]["klass"]
         locations = libre["balls"]["start_locations"]
@@ -38,7 +40,7 @@ class Game:
         return [klass(radius, Color(colors[idx]["color"], colors[idx]["vector"]), location, self.dT) for idx, location in enumerate(locations)]
 
     def prog_loop(self):
-
+        """The program loop."""
         while True:
             rate(self.rate)
             if self.game_state.menu:
@@ -48,6 +50,7 @@ class Game:
                 self.game_loop()
 
     def menu_loop(self):
+        """Start menu loop."""
         self.create_libre()
 
     def game_loop(self):
@@ -75,11 +78,13 @@ class Game:
         scene.caption = f"""{self.score}""" # move to scene class?
 
     def setup_turn(self):
+        """Clears collisions registered by the balls, replaces the cue and makes it visible."""
         self.reset_collision_balls()
         self.place_cue()
         self.cue.visible()
 
     def balls_update(self):
+        """Updates all the balls to the new positions and checks for collisions with the table and other balls."""
         for ball in self.balls:
             ball.update()                             # move ball to next position
             c_detector = Collision(self.table, ball)  # check for collisions with objects
@@ -87,31 +92,35 @@ class Game:
             c_detector.vs_balls(self.balls)
 
     def score_points(self):
+        """Score points if conditions are met."""
         point = False
         if len(self.current_cueball.get_collisions()) > 0:
             point = self.score.score_shot(self.current_player, self.current_objective, self.current_cueball.get_collisions())
         return point
 
     def change_player(self):
+        """Change to next player."""
         self.next_turn()
         self.next_player()
         self.next_objective()
         self.next_cueball()
 
     def place_cue(self):
-        # draw direction vector at current position
+        """Reposition the cue"""
         self.cue.rod.axis = self.cue.new_velocity()
         self.cue.rod.pos = self.current_cueball.get_position()
 
     def reset_collision_balls(self):
+        """Clear all registered collisions."""
         for ball in self.balls:
             ball.reset_collisions()
 
     def moving_balls(self):
+        """Return bool if any ball has speed"""
         return any([ball.has_speed() for ball in self.balls])
 
     def next_object(self, current_object, objects):
-        """"""
+        """Takes current_object (item in list) and objects (list), returns next object in list or loops to first item in the list."""
         current_object_index = objects.index(current_object)
         new_objective_index = (current_object_index + 1) % len(objects)
         return objects[new_objective_index]
@@ -129,20 +138,24 @@ class Game:
         self.current_cueball = self.next_object(self.current_cueball, self.cueballs)
 
     def next_turn(self):
+        """After both player have taken a turn, increase turn maker."""
         if (self.players.index(self.current_player) + 1) // len(self.players):
             self.score.next_turn()
 
     def stop_balls(self):
+        """Stops movement of all balls"""
         for ball in self.balls:
             ball.set_velocity(vector(0, 0, 0))
 
     def get_cueball(self):
+        """Return current cueball"""
         return self.current_cueball
 
 
 class GameState:
 
     def __init__(self):
+        """Set up game states, to keep track of current state of the game."""
         # Program State
         self.menu = True
         self.game = False
@@ -153,6 +166,7 @@ class GameState:
         self.point = False
 
     def reset_game_state(self):
+        """Reset game state to start a new game."""
         self.shot = False
         self.moving_balls = False
         self.point = False
@@ -164,6 +178,7 @@ class Table:
     WOOD = vector(133/255, 94/255, 66/255)
 
     def __init__(self, height, width, cushion, holes=False):
+        """Set up the playing table."""
         self.cushion = cushion
         self.height = height
         self.width = width
@@ -171,9 +186,11 @@ class Table:
         self.table = self.create_table()
 
     def __repr__(self):
+        """Set respresentation of instance of Table"""
         return "Table"
 
     def create_table(self):
+        """Create model of the table."""
         ground = box(size=vector(self.height + self.cushion, 1, self.width + self.cushion), pos=vector(0, -1, 0), color=self.GREEN)
         
         wall_a = box(pos=vector(0, self.cushion // 2, -(self.width + self.cushion) // 2), axis=vector(1, 0, 0), size=vector(self.height + 1.65 * self.cushion, self.cushion, self.cushion), color=self.GREEN)
@@ -215,6 +232,7 @@ class Ball:
         self.color = color
 
     def __repr__(self):
+        """Set respresentation of instance of Ball"""
         return str(self.color)
 
     def update(self, direction=1):
@@ -395,13 +413,16 @@ class Cue:
 class Color:
 
     def __init__(self, color, vec):
+        """Connect colorname to color vector"""
         self.color = color
         self.vec = vec
 
     def __repr__(self):
+        """Set respresentation of instance of Color"""
         return self.color
 
     def rgb(self):
+        """Return the color-vector"""
         return self.vec
 
 
@@ -427,6 +448,7 @@ class Score:
 class LibreScore(Score):
 
     def __init__(self, players, turns=20):
+        """Set up score for the Libre game."""
         super().__init__()
         self.players = players
         self.score = {player: 0 for player in players}
@@ -434,6 +456,7 @@ class LibreScore(Score):
         self.turn = 1
 
     def __repr__(self):
+        """Set respresentation of instance of LibreScore"""
         s = "Current score:\n"
         for player in self.players:
             s += f"{player}: {self.score[player]}\n"
@@ -441,15 +464,19 @@ class LibreScore(Score):
         return s
 
     def next_turn(self):
+        """Increase turn marker by 1."""
         self.turn += 1
 
     def get_turn(self):
+        """Return number of turns taken."""
         return self.turn
 
     def get_player_score(self, player):
+        """Return the score of a player"""
         return self.score[player]
 
     def score_shot(self, player, objectives, collisions):
+        """Determine if a player scored points based on collisions."""
         if self.hit_objective(objectives["Combination"], collisions):
             self.score[player] = self.score[player] + objectives["Points"]
             return True
@@ -457,6 +484,7 @@ class LibreScore(Score):
 
 
 def keydown_func(evt):
+    """Maps key presses to functions."""
     map = {
             'w': {'bools': [game.game_state.game], 'func': game.cue.change_power, 'args': (1,)},
             'W': {'bools': [game.game_state.game], 'func': game.cue.change_power, 'args': (1, 1000)},
@@ -582,7 +610,7 @@ if __name__ == '__main__':
 
     # Constants
     RATE=30
-    game = Game(RATE)
+    game = Game(RATE, settings, libre)
 
     # start Game
     game.prog_loop()
