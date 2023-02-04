@@ -12,6 +12,7 @@ class Prog:
         # setting up minimal components to make the keydown_func funtion.
         self.game = Game(self.rate, self.settings, self.table, self.caption)
         self.game.cue.invisible()
+        self.camera = Camera()
 
     def prog_loop(self):
         while True:
@@ -24,9 +25,10 @@ class Prog:
 
     def menu_loop(self):
         """Do menu animation"""
-        pass
+        self.camera.new_pos()
 
     def set_up_libre(self):
+        self.camera.set_game_play()
         self.caption.set_libre()
         self.game = LibreGame(self.rate, self.settings, self.table, self.caption)
         self.game.create()
@@ -386,7 +388,7 @@ class Collision:
 
 class Cue:
 
-    def __init__(self, power=5000, max_power=20000):
+    def __init__(self, power=5000, max_power=18000):
         """Generate object to show direction and speed of cue-ball."""
         self.rod = cylinder(pos = vector(0, 50, 0), axis = vector(1000, 0, 0),radius = 20, color = vector(139, 69, 19)/255)
         self.angle = 0
@@ -426,6 +428,28 @@ class Cue:
     def invisible(self):
         """Turn cue invisible."""
         self.rod.opacity = 0
+
+
+class Camera:
+
+    def __init__(self):
+        """"""
+        self.angle = 0
+        self.distance = 22000
+        scene.camera.pos = vector(-23000, 6500, -0)
+        scene.camera.axis = vector(23000, -6500, 0)
+
+    def new_pos(self):
+        """Calculate the new velocity for the next shot."""
+        self.angle += .5
+        self.angle %= 360
+        rad = radians(self.angle)
+        scene.camera.pos = vector(-self.distance * cos(rad), 6500, -self.distance * sin(rad))
+        scene.camera.axis = vector(self.distance * cos(rad), -6500, self.distance * sin(rad))
+
+    def set_game_play(self):
+        scene.camera.pos = vector(-23000, 6500, 0)
+        scene.camera.axis = vector(23000, -6500, 0)
 
 
 class Color:
@@ -504,24 +528,29 @@ class LibreScore(Score):
 class Caption:
 
     def __init__(self):
+        """Setup up caption interface to provide proper guidance throughout the game"""
         self.interface = self.explain_menu()
         self.game = ""
         self.update()
 
     def update(self, score=None):
+        """Update scene caption"""
         if score == None:
             scene.caption = f"""{self.interface}"""
         else:
             scene.caption = f"""{score}\n{self.game}{self.interface}"""
 
     def set_libre(self):
+        """Select text for Libre game"""
         self.interface = self.explain_interface()
         self.game = self.explain_libre()
 
     def set_menu(self):
+        """Select text for menu"""
         self.interface = self.explain_menu()
 
     def explain_libre(self):
+        """Explanation for Libre"""
         return  """
 Game rules:
 Players take turns and try to hit the other two balls with their cueball. Making this carambool will result in a point. The player with the most points after 20
@@ -529,6 +558,7 @@ turns wil win the game.
 """
 
     def explain_interface(self):
+        """Explanation for usin the game."""
         return """
 Interface explaination:
 The 'cue' give the direction and power of the shot. The angle can be adjusted clockwise: 'D' - 0.1, 'd' - 1, 'e' - 10, 'E' - 90 degrees;
@@ -539,6 +569,7 @@ Right click on the mouse + moving will move the camera.
 """
 
     def explain_menu(self):
+        """Explanation for menu"""
         return """
 Please Choose a game:
 1. Libre
@@ -646,8 +677,8 @@ if __name__ == '__main__':
     scene.bind('keydown', keydown_func)        # Functie voor toetsaanslagen
 
     # fix camera position, currently based on magic numbers!
-    scene.camera.pos = vector(-22000, 6500, 0)
-    scene.camera.axis = vector(22000, -6500, 0)
+    scene.camera.pos = vector(-23000, 6500, 0)
+    scene.camera.axis = vector(23000, -6500, 0)
 
     # Constants
     RATE=30
