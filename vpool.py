@@ -451,6 +451,21 @@ class Camera:
         scene.camera.pos = vector(-23000, 6500, 0)
         scene.camera.axis = vector(23000, -6500, 0)
 
+    def move_x(self, direction, change=1000):
+        # rad = tan(scene.camera.pos.z/scene.camera.pos.x)
+        # scene.camera.pos = vector(scene.camera.pos.x - direction * cos(rad) * change, scene.camera.pos.y, scene.camera.pos.z - direction * sin(rad) * change)
+        # scene.camera.axis = vector(scene.camera.axis.x - direction * cos(rad) * change, scene.camera.axis.y, scene.camera.axis.z - direction * sin(rad) * change)
+        scene.camera.pos = vector(scene.camera.pos.x - direction * change, scene.camera.pos.y, scene.camera.pos.z)
+        scene.camera.axis = vector(scene.camera.axis.x - direction * change, scene.camera.axis.y, scene.camera.axis.z)
+
+    def move_z(self, direction, change=1000):
+        scene.camera.pos = vector(scene.camera.pos.x, scene.camera.pos.y, scene.camera.pos.z - direction * change)
+        scene.camera.axis = vector(scene.camera.axis.x, scene.camera.axis.y, scene.camera.axis.z - direction * change)
+
+    def forward(self):
+        scene.forward()
+
+
 
 class Color:
 
@@ -582,6 +597,13 @@ Please Choose a game:
 def keydown_func(evt):
     """Maps key presses to functions."""
     map = {
+            'i': {'bools': [prog.game_bool], 'func': prog.camera.forward, 'args': ()},
+
+            'left': {'bools': [prog.game_bool], 'func': prog.camera.move_z, 'args': (1,)},
+            'right': {'bools': [prog.game_bool], 'func': prog.camera.move_z, 'args': (-1,)},
+            'up': {'bools': [prog.game_bool], 'func': prog.camera.move_x, 'args': (-1,)},
+            'down': {'bools': [prog.game_bool], 'func': prog.camera.move_x, 'args': (1,)},
+
             'w': {'bools': [prog.game_bool], 'func': prog.game.cue.change_power, 'args': (1,)},
             'W': {'bools': [prog.game_bool], 'func': prog.game.cue.change_power, 'args': (1, 1000)},
             's': {'bools': [prog.game_bool], 'func': prog.game.cue.change_power, 'args': (-1,)},
@@ -672,8 +694,7 @@ if __name__ == '__main__':
     scene.background = 0.8 * vector(1, 1, 1)  # Lichtgrijs (0.8 van 1.0)
     scene.width = 1280                         # Maak het 3D-scherm groter
     scene.height = 700
-    scene.title = 'VPool'
-    scene.caption = """Hello World!"""
+    scene.title = 'Welcome to VPool!'
     scene.bind('keydown', keydown_func)        # Functie voor toetsaanslagen
 
     # fix camera position, currently based on magic numbers!
