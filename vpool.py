@@ -19,19 +19,21 @@ class Game:
         self.current_objective = None
         self.cueballs = None
         self.current_cueball = None
+        self.caption = None
 
     def create_libre(self):
         """Sets up the Libre game."""
         self.players = ["Player 1", "Player 2"]
         self.score = libre["score"](self.players)
-        self.balls = self.create_balls()
+        self.balls = self.create_libre_balls()
         self.current_player = self.players[0]
         self.objectives = [goal["Combinations"] for goal in libre["goals"]]
         self.current_objective = self.objectives[0]
         self.cueballs = [self.balls[idx] for idx in range(len(self.balls)) if libre["balls"]["cueballs"][idx]]
         self.current_cueball = self.cueballs[0]
+        self.caption = Caption()
 
-    def create_balls(self):
+    def create_libre_balls(self):
         """Sets up the ball required for the game."""
         radius = settings["ball_size"]
         klass = libre["balls"]["klass"]
@@ -41,6 +43,7 @@ class Game:
 
     def prog_loop(self):
         """The program loop."""
+        # while self.game_state.prog:
         while True:
             rate(self.rate)
             if self.game_state.menu:
@@ -75,7 +78,11 @@ class Game:
             self.game_state.shot = False
             self.game_state.point = False
 
-        scene.caption = f"""{self.score}""" # move to scene class?
+        self.caption.update(self.score)
+        # scene.caption = f"""{self.score}""" # move to scene class?
+
+    # def quit(self):
+    #     self.game_state.prog = False
 
     def setup_turn(self):
         """Clears collisions registered by the balls, replaces the cue and makes it visible."""
@@ -156,9 +163,11 @@ class GameState:
 
     def __init__(self):
         """Set up game states, to keep track of current state of the game."""
+
         # Program State
         self.menu = True
         self.game = False
+        # self.prog = True
 
         # Turn states
         self.shot = False
@@ -456,10 +465,10 @@ class LibreScore(Score):
 
     def __repr__(self):
         """Set respresentation of instance of LibreScore"""
-        s = "Current score:\n"
+        s = "Current score: "
         for player in self.players:
-            s += f"{player}: {self.score[player]}\n"
-        s += f"turn: {self.turn}\n"
+            s += f"{player}: {self.score[player]}, "
+        s += f"turn: {self.turn}"
         return s
 
     def next_turn(self):
@@ -482,6 +491,51 @@ class LibreScore(Score):
         return False
 
 
+class Caption:
+
+    def __init__(self):
+        self.interface = self.explain_menu()
+        self.game = ""
+
+    def update(self, score=None):
+        if score == None:
+            scene.caption = f"""{self.interface}"""
+        scene.caption = f"""{score}\n{self.game}{self.interface}"""
+
+    def set_libre(self):
+        self.interface = self.explain_interface()
+        self.game = self.explain_libre()
+
+    def set_menu(self):
+        self.interface = self.explain_menu()
+
+    def explain_libre(self):
+        return  """
+Game rules:
+Players take turns and try to hit the other two balls with their cueball. Making this carambool will result in a point. The player with the most points after 20
+turns wil win the game.
+"""
+
+    def explain_interface(self):
+        return """
+Interface explaination:
+The 'cue' give the direction and power of the shot. The angle can be adjusted clockwise: 'D' - 0.1, 'd' - 1, 'e' - 10, 'E' - 90 degrees;
+or counterclockwise: 'A' - 0.1, 'a' - 1, 'q' - 10, 'Q' - 90 degrees. The power of the shot can be adjusted by: 'w' for increase or 's' for 
+decrease, 'W' and 'S' will do a 10 fold jump. To take a shot press 'space bar'. 
+The cueball can be stopped by pressing 'z' or 'x' for all balls.
+Right click on the mouse + moving will move the camera.
+"""
+
+    def explain_menu(self):
+        return """
+Please Choose a game:
+1. Libre
+2. 10-over-rood
+3. Hondertje maken
+4. 3-Banden
+"""
+        
+
 def keydown_func(evt):
     """Maps key presses to functions."""
     map = {
@@ -502,7 +556,14 @@ def keydown_func(evt):
 
             ' ': {'bools': [game.game_state.game], 'func': game.get_cueball().set_velocity, 'args': (game.cue.new_velocity(),)},
             'z': {'bools': [game.game_state.game], 'func': game.get_cueball().set_velocity, 'args': (vector(0, 0, 0),)},
-            'x': {'bools': [game.game_state.game], 'func': game.stop_balls, 'args': ()},    
+            'x': {'bools': [game.game_state.game], 'func': game.stop_balls, 'args': ()}, 
+
+            '1': {'bools': [game.game_state.menu], 'func': game.create_libre, 'args': ()},
+            '2': {'bools': [game.game_state.menu], 'func': game.create_libre, 'args': ()},
+            '3': {'bools': [game.game_state.menu], 'func': game.create_libre, 'args': ()},
+            '4': {'bools': [game.game_state.menu], 'func': game.create_libre, 'args': ()},  
+
+            # 'p': {'bools': [True], 'func': game.quit, 'args': ()}, 
         }
 
     key = evt.key
@@ -556,39 +617,8 @@ libre = {
                 },
         }
     ],
-    "score": LibreScore
+    "score": LibreScore,
 }
-
-
-# class Menu:
-
-#     menu_texts = {
-#         "intro": "Welkom bij VPool\n",
-#         "help": """
-#             \nThe 'cue' give the direction and power of the shot. The angle can be adjusted
-#             clockwise: 'D' by 0.1 degree, 'd' by one degree, 'e' by 10 degrees and 'E' by 
-#             90 degrees; or counterclockwise: 'A' by 0.1 degree, 'a' by one degree, 'q' by 
-#             10 degrees and Q by 90 degrees. The power of the shot can be adjusted by: 'w' 
-#             for increase or 's' for decrease, 'W' and 'S' will do a 10 fold jump. To take 
-#             a shot press 'space bar'. The cueball can be stopped by pressing 'z' or 'x' for 
-#             all balls.
-#             'h' will toggle display of the instructions. 'm' will quit the game to the menu.
-#         """,
-#         "libre": """
-#             \nGame rules:
-#             Players take turns and try to hit the other two balls with their cueball. Making
-#             this carambool will result in a point. The player with the most points after 20
-#             turns wil win the game.
-#         """
-# }
-
-#     def __init__(self):
-#         self.intro = False
-#         self.help = False
-#         self.libre = False
-
-#     def get_caption(self, extra_text):
-#         return f"""{menu_texts['intro'] if self.intro}{menu_texts['help'] if self.intro}{menu_texts['intro'] if self.intro}"""
 
 
 if __name__ == '__main__':
