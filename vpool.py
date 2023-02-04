@@ -506,11 +506,13 @@ class Caption:
     def __init__(self):
         self.interface = self.explain_menu()
         self.game = ""
+        self.update()
 
     def update(self, score=None):
         if score == None:
             scene.caption = f"""{self.interface}"""
-        scene.caption = f"""{score}\n{self.game}{self.interface}"""
+        else:
+            scene.caption = f"""{score}\n{self.game}{self.interface}"""
 
     def set_libre(self):
         self.interface = self.explain_interface()
