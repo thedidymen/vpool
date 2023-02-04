@@ -13,7 +13,7 @@ class Prog:
         self.game = Game(self.rate, self.settings, self.table, self.caption)
         self.game.cue.invisible()
         self.camera = Camera()
-
+        
     def prog_loop(self):
         while True:
             rate(self.rate)
@@ -462,10 +462,6 @@ class Camera:
         scene.camera.pos = vector(scene.camera.pos.x, scene.camera.pos.y, scene.camera.pos.z - direction * change)
         scene.camera.axis = vector(scene.camera.axis.x, scene.camera.axis.y, scene.camera.axis.z - direction * change)
 
-    def forward(self):
-        scene.forward()
-
-
 
 class Color:
 
@@ -597,8 +593,6 @@ Please Choose a game:
 def keydown_func(evt):
     """Maps key presses to functions."""
     map = {
-            'i': {'bools': [prog.game_bool], 'func': prog.camera.forward, 'args': ()},
-
             'left': {'bools': [prog.game_bool], 'func': prog.camera.move_z, 'args': (1,)},
             'right': {'bools': [prog.game_bool], 'func': prog.camera.move_z, 'args': (-1,)},
             'up': {'bools': [prog.game_bool], 'func': prog.camera.move_x, 'args': (-1,)},
