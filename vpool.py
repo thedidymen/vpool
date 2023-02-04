@@ -1,60 +1,55 @@
 from vpython import *
 
 
+class Prog:
+    def __init__(self, rate, settings):
+        self.menu_bool = True
+        self.game_bool = False
+        self.rate = rate
+        self.settings = settings
+        self.table = Table(settings["table"]["height"], settings["table"]["width"], settings["table"]["cushion"])
+        self.caption = Caption()
+        # setting up minimal components to make the keydown_func funtion.
+        self.game = Game(self.rate, self.settings, self.table, self.caption)
+        self.game.cue.invisible()
+
+    def prog_loop(self):
+        while True:
+            rate(self.rate)
+            if self.menu_bool:
+                self.menu_loop()
+                
+            if self.game_bool:
+                self.game.game_loop()
+
+    def menu_loop(self):
+        """Do menu animation"""
+        pass
+
+    def set_up_libre(self):
+        self.caption.set_libre()
+        self.game = LibreGame(self.rate, self.settings, self.table, self.caption)
+        self.game.create()
+        self.menu_bool, self.game_bool = self.game_bool, self.menu_bool
+
 class Game:
 
-    def __init__(self, rate, settings, libre):
-        """Setup up the game, takes rate (int), settings (dict) and libre (dict)."""
-        self.table = Table(settings["table"]["height"], settings["table"]["width"], settings["table"]["cushion"])
+    def __init__(self, rate, settings, table, caption):
         self.cue = settings["cue"]()
         self.game_state = settings["game_state"]()
-        self.rate = rate
-        self.dT = 1.0/self.rate
+        self.dT = 1.0/rate
+        self.table = table
+        self.caption = caption
 
+        # setting up minimal components to make the keydown_func funtion.
         self.score = None
-        self.balls = None
+        self.balls = [Ball(1, Color("WHITE", vector(255/255, 255/255, 255/255)), vector(0,0,0), self.dT)]
         self.players = None
         self.current_player = None
         self.objectives = None
         self.current_objective = None
-        self.cueballs = None
-        self.current_cueball = None
-        self.caption = None
-
-    def create_libre(self):
-        """Sets up the Libre game."""
-        self.players = ["Player 1", "Player 2"]
-        self.score = libre["score"](self.players)
-        self.balls = self.create_libre_balls()
-        self.current_player = self.players[0]
-        self.objectives = [goal["Combinations"] for goal in libre["goals"]]
-        self.current_objective = self.objectives[0]
-        self.cueballs = [self.balls[idx] for idx in range(len(self.balls)) if libre["balls"]["cueballs"][idx]]
-        self.current_cueball = self.cueballs[0]
-        self.caption = Caption()
-
-    def create_libre_balls(self):
-        """Sets up the ball required for the game."""
-        radius = settings["ball_size"]
-        klass = libre["balls"]["klass"]
-        locations = libre["balls"]["start_locations"]
-        colors = libre["balls"]["colors"]
-        return [klass(radius, Color(colors[idx]["color"], colors[idx]["vector"]), location, self.dT) for idx, location in enumerate(locations)]
-
-    def prog_loop(self):
-        """The program loop."""
-        # while self.game_state.prog:
-        while True:
-            rate(self.rate)
-            if self.game_state.menu:
-                self.menu_loop()
-                self.game_state.menu, self.game_state.game = self.game_state.game, self.game_state.menu
-            if self.game_state.game:
-                self.game_loop()
-
-    def menu_loop(self):
-        """Start menu loop."""
-        self.create_libre()
+        self.cueballs = self.balls[0]
+        self.current_cueball = self.balls[0]
 
     def game_loop(self):
         """Start the game loop."""
@@ -79,10 +74,6 @@ class Game:
             self.game_state.point = False
 
         self.caption.update(self.score)
-        # scene.caption = f"""{self.score}""" # move to scene class?
-
-    # def quit(self):
-    #     self.game_state.prog = False
 
     def setup_turn(self):
         """Clears collisions registered by the balls, replaces the cue and makes it visible."""
@@ -158,16 +149,35 @@ class Game:
         """Return current cueball"""
         return self.current_cueball
 
+class LibreGame(Game):
+
+    def __init__(self, rate, settings, table, caption):
+        super().__init__(rate, settings, table, caption)
+
+    def create(self):
+        """Sets up the Libre game."""
+        self.players = ["Player 1", "Player 2"]
+        self.score = libre["score"](self.players)
+        self.balls = self.create_balls()
+        self.current_player = self.players[0]
+        self.objectives = [goal["Combinations"] for goal in libre["goals"]]
+        self.current_objective = self.objectives[0]
+        self.cueballs = [self.balls[idx] for idx in range(len(self.balls)) if libre["balls"]["cueballs"][idx]]
+        self.current_cueball = self.cueballs[0]
+
+    def create_balls(self):
+        """Sets up the ball required for the game."""
+        radius = settings["ball_size"]
+        klass = libre["balls"]["klass"]
+        locations = libre["balls"]["start_locations"]
+        colors = libre["balls"]["colors"]
+        return [klass(radius, Color(colors[idx]["color"], colors[idx]["vector"]), location, self.dT) for idx, location in enumerate(locations)]
+
 
 class GameState:
 
     def __init__(self):
         """Set up game states, to keep track of current state of the game."""
-
-        # Program State
-        self.menu = True
-        self.game = False
-        # self.prog = True
 
         # Turn states
         self.shot = False
@@ -539,29 +549,29 @@ Please Choose a game:
 def keydown_func(evt):
     """Maps key presses to functions."""
     map = {
-            'w': {'bools': [game.game_state.game], 'func': game.cue.change_power, 'args': (1,)},
-            'W': {'bools': [game.game_state.game], 'func': game.cue.change_power, 'args': (1, 1000)},
-            's': {'bools': [game.game_state.game], 'func': game.cue.change_power, 'args': (-1,)},
-            'S': {'bools': [game.game_state.game], 'func': game.cue.change_power, 'args': (-1, 1000)},
+            'w': {'bools': [prog.game_bool], 'func': prog.game.cue.change_power, 'args': (1,)},
+            'W': {'bools': [prog.game_bool], 'func': prog.game.cue.change_power, 'args': (1, 1000)},
+            's': {'bools': [prog.game_bool], 'func': prog.game.cue.change_power, 'args': (-1,)},
+            'S': {'bools': [prog.game_bool], 'func': prog.game.cue.change_power, 'args': (-1, 1000)},
 
-            'a': {'bools': [game.game_state.game], 'func': game.cue.change_angle, 'args': (-1,)},
-            'A': {'bools': [game.game_state.game], 'func': game.cue.change_angle, 'args': (-1, 0.1)},
-            'q': {'bools': [game.game_state.game], 'func': game.cue.change_angle, 'args': (-1, 10)},
-            'Q': {'bools': [game.game_state.game], 'func': game.cue.change_angle, 'args': (-1, 90)},
+            'a': {'bools': [prog.game_bool], 'func': prog.game.cue.change_angle, 'args': (-1,)},
+            'A': {'bools': [prog.game_bool], 'func': prog.game.cue.change_angle, 'args': (-1, 0.1)},
+            'q': {'bools': [prog.game_bool], 'func': prog.game.cue.change_angle, 'args': (-1, 10)},
+            'Q': {'bools': [prog.game_bool], 'func': prog.game.cue.change_angle, 'args': (-1, 90)},
 
-            'd': {'bools': [game.game_state.game], 'func': game.cue.change_angle, 'args': (1,)},
-            'D': {'bools': [game.game_state.game], 'func': game.cue.change_angle, 'args': (1, 0.1)},
-            'e': {'bools': [game.game_state.game], 'func': game.cue.change_angle, 'args': (1, 10)},
-            'E': {'bools': [game.game_state.game], 'func': game.cue.change_angle, 'args': (1, 90)},
+            'd': {'bools': [prog.game_bool], 'func': prog.game.cue.change_angle, 'args': (1,)},
+            'D': {'bools': [prog.game_bool], 'func': prog.game.cue.change_angle, 'args': (1, 0.1)},
+            'e': {'bools': [prog.game_bool], 'func': prog.game.cue.change_angle, 'args': (1, 10)},
+            'E': {'bools': [prog.game_bool], 'func': prog.game.cue.change_angle, 'args': (1, 90)},
 
-            ' ': {'bools': [game.game_state.game], 'func': game.get_cueball().set_velocity, 'args': (game.cue.new_velocity(),)},
-            'z': {'bools': [game.game_state.game], 'func': game.get_cueball().set_velocity, 'args': (vector(0, 0, 0),)},
-            'x': {'bools': [game.game_state.game], 'func': game.stop_balls, 'args': ()}, 
+            ' ': {'bools': [prog.game_bool], 'func': prog.game.get_cueball().set_velocity, 'args': (prog.game.cue.new_velocity(),)},
+            'z': {'bools': [prog.game_bool], 'func': prog.game.get_cueball().set_velocity, 'args': (vector(0, 0, 0),)},
+            'x': {'bools': [prog.game_bool], 'func': prog.game.stop_balls, 'args': ()}, 
 
-            '1': {'bools': [game.game_state.menu], 'func': game.create_libre, 'args': ()},
-            '2': {'bools': [game.game_state.menu], 'func': game.create_libre, 'args': ()},
-            '3': {'bools': [game.game_state.menu], 'func': game.create_libre, 'args': ()},
-            '4': {'bools': [game.game_state.menu], 'func': game.create_libre, 'args': ()},  
+            '1': {'bools': [prog.menu_bool], 'func': prog.set_up_libre, 'args': ()},
+            # '2': {'bools': [prog.menu_bool], 'func': prog.game.create_libre, 'args': ()},
+            # '3': {'bools': [prog.menu_bool], 'func': prog.game.create_libre, 'args': ()},
+            # '4': {'bools': [prog.menu_bool], 'func': prog.game.create_libre, 'args': ()},  
 
             # 'p': {'bools': [True], 'func': game.quit, 'args': ()}, 
         }
@@ -639,7 +649,7 @@ if __name__ == '__main__':
 
     # Constants
     RATE=30
-    game = Game(RATE, settings, libre)
+    prog = Prog(RATE, settings)
 
     # start Game
-    game.prog_loop()
+    prog.prog_loop()
