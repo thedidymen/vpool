@@ -3,15 +3,16 @@ from vpython import *
 
 class Prog:
 
-    def __init__(self, rate, settings):
+    def __init__(self, rate, settings, games_settings):
         self.menu_bool = True
         self.game_bool = False
         self.rate = rate
         self.settings = settings
+        self.games_settings = games_settings
         self.table = Table(settings["table"]["height"], settings["table"]["width"], settings["table"]["cushion"])
         self.caption = Caption()
         # setting up minimal components to make the keydown_func funtion.
-        self.game = Game(self.rate, self.settings["ball_size"], self.table, self.caption, libre, ["Player 1", "Player 2"])
+        self.game = Game(self.rate, self.settings["ball_size"], self.table, self.caption, self.games_settings['Libre'], ["Player 1", "Player 2"])
         self.game.cue.invisible()
         self.camera = Camera()
 
@@ -44,7 +45,7 @@ class Prog:
 
         # Clear previous game of objects and set up new game
         self.game.empty()
-        self.game = LibreGame(self.rate, self.settings["ball_size"], self.table, self.caption, libre, ["Player 1", "Player 2"])
+        self.game = LibreGame(self.rate, self.settings["ball_size"], self.table, self.caption, self.games_settings['Libre'], ["Player 1", "Player 2"])
 
         # Go into game modus
         self.menu_bool, self.game_bool = self.game_bool, self.menu_bool
@@ -54,11 +55,11 @@ class Prog:
         self.camera.set_game_play()
 
         # reset and set caption
-        self.caption.set_libre()
+        self.caption.set_hundred()
 
         # Clear previous game of objects and set up new game
         self.game.empty()
-        self.game = HundredGame(self.rate, self.settings["ball_size"], self.table, self.caption, hundred, ["Player 1", "Player 2"])
+        self.game = HundredGame(self.rate, self.settings["ball_size"], self.table, self.caption, self.games_settings['Hundred'], ["Player 1", "Player 2"])
 
         # Go into game modus
         self.menu_bool, self.game_bool = self.game_bool, self.menu_bool
@@ -119,7 +120,7 @@ class Game:
             self.game_state.shot = False
             self.game_state.lose_turn = False
 
-        self.caption.update(self.score)
+        self.caption.update(self.current_player, self.score)
 
     def empty(self):
         for ball in self.balls:
@@ -220,9 +221,8 @@ class HundredGame(Game):
         super().__init__(rate, ball_radius, table, caption, settings, players_list)
 
     def game_finished(self):
-        if self.score.get_turn() == 3:
-            return True
-        return False
+        return self.score.check_victor()
+
 
 class GameState:
 
@@ -552,12 +552,11 @@ class Score:
 
 class LibreScore(Score):
 
-    def __init__(self, players, turns=20):
+    def __init__(self, players):
         """Set up score for the Libre game."""
         super().__init__()
         self.players = players
         self.score = {player: 0 for player in players}
-        self.turns = turns
         self.turn = 1
 
     def __repr__(self):
@@ -574,7 +573,6 @@ class LibreScore(Score):
         if len(victors) > 1:
             return f"{s}\nWinnaars: {', '.join(victors)}\n"
         return f"{s}\nWinnaar: {victors[0]}\n"
-
 
     def next_turn(self):
         """Increase turn marker by 1."""
@@ -596,6 +594,34 @@ class LibreScore(Score):
                 return True
         return False
 
+class HundredScore(LibreScore):
+
+    def __init__(self, players, object_score=4):
+        super().__init__(players)
+        self.object_score = object_score
+
+    def victor(self):
+        s = str(self)
+        victors = [key for key, value in self.score.items() if value == self.object_score]
+        if len(victors) > 1:
+            return f"{s}\nWinnaars: {', '.join(victors)}\n"
+        return f"{s}\nWinnaar: {victors[0]}\n"
+
+    def score_shot(self, player, objectives, collisions):
+        """Determine if a player scored points based on collisions."""
+        for objective in objectives:
+            if self.hit_objective(objective["Combination"], collisions):
+                self.score[player] = self.score[player] + objective["Points"]
+                if self.score[player] > self.object_score:
+                    self.score[player] = self.score[player] % self.object_score
+                return True
+        return False
+
+    def check_victor(self):
+        for player in self.players:
+            if self.score[player] == self.object_score:
+                return True
+        return False
 
 class Caption:
 
@@ -605,12 +631,17 @@ class Caption:
         self.game = ""
         self.update()
 
-    def update(self, score=None):
+    def update(self, current_player=None, score=None):
         """Update scene caption"""
+        if current_player != None:
+            current_player = f"\nCurrent player: {current_player}"
+        else:
+            current_player = f""
+
         if score == None:
             scene.caption = f"""{self.interface}"""
         else:
-            scene.caption = f"""{score}\n{self.game}{self.interface}"""
+            scene.caption = f"""{score}{current_player}\n{self.game}{self.interface}"""
 
     def empty(self):
         scene.caption = ""
@@ -619,6 +650,11 @@ class Caption:
         """Select text for Libre game"""
         self.interface = self.explain_interface()
         self.game = self.explain_libre()
+
+    def set_hundred(self):
+        """Select text for Libre game"""
+        self.interface = self.explain_interface()
+        self.game = self.explain_hundred()
 
     def set_menu(self):
         """Select text for menu"""
@@ -634,6 +670,14 @@ class Caption:
 Game rules:
 Players take turns and try to hit the other two balls with their cueball. Making this carambool will result in a point. The player with the most points after 20
 turns wil win the game.
+"""
+
+    def explain_hundred(self):
+        """Explanation for Hundred"""
+        return  """
+Game rules:
+Players take turns and try to hit a ball combination with the cueball. Hitting all other balls gives 20 points, Blue and Yellow are 4 points. Any combination 
+with Red is 1 point. The player with exactly 100 points wins. Going over 100 points will get a penalty of 100 points.
 """
 
     def explain_interface(self):
@@ -652,8 +696,8 @@ Right click on the mouse + moving will move the camera.
         return """
 Please Choose a game:
 1. Libre
-2. 10-over-rood
-3. Hondertje maken
+2. Hondertje maken
+3. 10-over-rood
 4. 3-Banden
 """
         
@@ -784,7 +828,7 @@ hundred = {
             ],
         },
     ],
-    "score":  LibreScore
+    "score":  HundredScore,
 }
 
 
@@ -805,7 +849,13 @@ if __name__ == '__main__':
 
     # Constants
     RATE=30
-    prog = Prog(RATE, settings)
+
+    games_settings = {
+        'Libre': libre,
+        'Hundred': hundred,
+    }
+
+    prog = Prog(RATE, settings, games_settings)
 
     # start Game
     prog.prog_loop()
