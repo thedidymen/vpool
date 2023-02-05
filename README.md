@@ -28,6 +28,9 @@ Further development will happen on the main-branch, so please checkout the miles
 
 # Starting the application
 
+Players names can be altered at the end of the vpool.py file. 
+Easy mode is currently enabled and can be disabled at the end file.
+
 The application can be started by:  
 
 ```python vpool.py```
