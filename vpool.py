@@ -984,7 +984,7 @@ if __name__ == '__main__':
     }
 
     # Pick names for players and set easy mode.
-    players = ["Player 1", "Player 2"]
+    players = ["Misja", "Emily"]
     easy_mode = True
 
     # start Game
