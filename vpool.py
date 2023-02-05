@@ -3,21 +3,25 @@ from vpython import *
 
 class Prog:
 
-    def __init__(self, rate, settings, games_settings):
+    def __init__(self, rate, settings, games_settings, players, easy_mode=False):
         """Create Program objects and settings"""
+        self.easy_mode = easy_mode
+        self.object_score = None
+
         self.menu_bool = True
         self.game_bool = False
 
         self.rate = rate
         self.settings = settings
         self.games_settings = games_settings
+        self.players = players
 
         self.table = Table(settings["table"]["height"], settings["table"]["width"], settings["table"]["cushion"])
         self.caption = Caption()
         self.camera = Camera()
 
         # setting up minimal components to make the keydown_func funtion.
-        self.game = Game(self.rate, self.settings["ball_size"], self.table, self.caption, self.games_settings['Libre'], ["Player 1", "Player 2"])
+        self.game = Game(self.rate, self.settings["ball_size"], self.table, self.caption, self.games_settings['Libre'], self.players, self.object_score)
         self.game.cue.invisible()
 
 
@@ -55,18 +59,30 @@ class Prog:
         """set caption and game specific settings for Libre"""
         self.setup_game()
         self.caption.set_libre()
-        self.game = LibreGame(self.rate, self.settings["ball_size"], self.table, self.caption, self.games_settings['Libre'], ["Player 1", "Player 2"])
+        if self.easy_mode:
+            self.object_score = 3
+        self.game = Game(self.rate, self.settings["ball_size"], self.table, self.caption, self.games_settings['Libre'], self.players, self.object_score)
 
     def set_up_hundred(self):
         """set caption and game specific settings for Hundred"""
         self.setup_game()
         self.caption.set_hundred()
-        self.game = HundredGame(self.rate, self.settings["ball_size"], self.table, self.caption, self.games_settings['Hundred'], ["Player 1", "Player 2"])
+        if self.easy_mode:
+            self.object_score = 5
+        self.game = Game(self.rate, self.settings["ball_size"], self.table, self.caption, self.games_settings['Hundred'], self.players, self.object_score)
+
+    def set_up_over_red(self):
+        """set caption and game specific settings for Hundred"""
+        self.setup_game()
+        self.caption.set_over_red()
+        if self.easy_mode:
+            self.object_score = 2
+        self.game = Game(self.rate, self.settings["ball_size"], self.table, self.caption, self.games_settings['Over red'], self.players, self.object_score)
 
 
 class Game:
 
-    def __init__(self, rate, ball_radius, table, caption, settings, players_list):
+    def __init__(self, rate, ball_radius, table, caption, settings, players_list, object_score):
         """Setup a Game"""
         self.cue = Cue()
         self.game_state = GameState()
@@ -77,7 +93,7 @@ class Game:
 
         # Setting up players
         self.players = players_list
-        self.score = settings["score"](self.players)
+        self.score = settings["score"](self.players, object_score)
 
         # create balls, setup cueballs and objectives
         self.balls = self.create_balls(settings)
@@ -203,23 +219,6 @@ class Game:
     def get_cueball(self):
         """Return current cueball"""
         return self.current_cueball
-
-
-class LibreGame(Game):
-
-    def __init__(self, rate, ball_radius, table, caption, settings, players_list):
-        super().__init__(rate, ball_radius, table, caption, settings, players_list)
-
-    def game_finished(self):
-        if self.score.get_turn() == 3:
-            return True
-        return False
-
-
-class HundredGame(Game):
-
-    def __init__(self, rate, ball_radius, table, caption, settings, players_list):
-        super().__init__(rate, ball_radius, table, caption, settings, players_list)
 
     def game_finished(self):
         return self.score.check_victor()
@@ -535,6 +534,12 @@ class Score:
         set_collisions = set(collisions)
         return all([object in set_collisions for object in objects])
 
+    def hit_objective_in_order(self, objects, collisions):
+        """Return Bool if all objectives are hit."""
+        ordered_set = list(dict.fromkeys(collisions))
+        strip_cushions = [obj for obj in ordered_set if obj != 'CUSHION']
+        return objects == strip_cushions
+
     def cushion_first(self, collisions):
         """Returns bool if cushion was hit first"""
         return collisions[0] == "CUSHION"
@@ -549,12 +554,13 @@ class Score:
 
 class LibreScore(Score):
 
-    def __init__(self, players):
+    def __init__(self, players, object_score):
         """Set up score for the Libre game."""
         super().__init__()
         self.players = players
         self.score = {player: 0 for player in players}
         self.turn = 1
+        self.object_score = 20 if object_score == None else object_score
 
     def __repr__(self):
         """Set respresentation of instance of LibreScore"""
@@ -592,12 +598,18 @@ class LibreScore(Score):
                 return True
         return False
 
+    def check_victor(self):
+        """Check if there is a winner."""
+        if self.get_turn() == self.object_score:
+            return True
+        return False
+
 class HundredScore(LibreScore):
 
-    def __init__(self, players, object_score=4):
+    def __init__(self, players, object_score):
         """Setup Score for Hundred game"""
-        super().__init__(players)
-        self.object_score = object_score
+        super().__init__(players, object_score)
+        self.object_score = 100 if object_score == None else object_score
 
     def victor(self):
         """Determine the winner"""
@@ -623,6 +635,41 @@ class HundredScore(LibreScore):
             if self.score[player] == self.object_score:
                 return True
         return False
+
+class OverRedScore(LibreScore):
+
+    def __init__(self, players, object_score):
+        """Setup Score for Hundred game"""
+        super().__init__(players, object_score)
+        self.object_score = 10 if object_score == None else object_score
+
+    def victor(self):
+        """Determine the winner"""
+        s = str(self)
+        victors = [key for key, value in self.score.items() if value == self.object_score]
+        if len(victors) > 1:
+            return f"{s}\nWinnaars: {', '.join(victors)}\n"
+        return f"{s}\nWinnaar: {victors[0]}\n"
+
+    def score_shot(self, player, objectives, collisions):
+        """Determine if a player scored points based on collisions."""
+        if self.hit_objective_in_order(objectives[0]["Combination"], collisions):
+            self.score[player] = self.score[player] + objectives[0]["Points"]
+            if self.score[player] == self.object_score:
+                return False
+            return True
+        if not self.hit_objective_in_order(objectives[1]["Combination"], collisions):
+            if self.score[player] < 7:
+                self.score[player] = 0
+        return False
+
+    def check_victor(self):
+        """Check if there is a winner."""
+        for player in self.players:
+            if self.score[player] == self.object_score:
+                return True
+        return False
+
 
 class Caption:
 
@@ -658,6 +705,11 @@ class Caption:
         self.interface = self.explain_interface()
         self.game = self.explain_hundred()
 
+    def set_over_red(self):
+        """Select text for Libre game"""
+        self.interface = self.explain_interface()
+        self.game = self.explain_over_red()
+
     def set_menu(self):
         """Select text for menu"""
         self.interface = self.explain_menu()
@@ -671,7 +723,7 @@ class Caption:
         return  """
 Game rules:
 Players take turns and try to hit the other two balls with their cueball. Making this carambool will result in a point. The player with the most points after 20
-turns wil win the game.
+turns wil win the game. (Easy mode = 3 turns)
 """
 
     def explain_hundred(self):
@@ -679,7 +731,15 @@ turns wil win the game.
         return  """
 Game rules:
 Players take turns and try to hit a ball combination with the cueball. Hitting all other balls gives 20 points, Blue and Yellow are 4 points. Any combination 
-with Red is 1 point. The player with exactly 100 points wins. Going over 100 points will get a penalty of 100 points.
+with Red is 1 point. The player with exactly 100 points wins. Going over 100 points will get a penalty of 100 points. (Easy mode = 5 points)
+"""
+
+    def explain_over_red(self):
+        """Explanation for 10 over Red"""
+        return  """
+Game rules:
+Players make points by hitting the red ball first and then the yellow ball. Players lose all their points if they miss the red ball if current score is less 
+than 7. Game wil stop if a player hits 10 points, there will be an equalizing turn. (Easy mode = 2 points)
 """
 
     def explain_interface(self):
@@ -733,7 +793,7 @@ def keydown_func(evt):
 
             '1': {'bools': [prog.menu_bool], 'func': prog.set_up_libre, 'args': ()},
             '2': {'bools': [prog.menu_bool], 'func': prog.set_up_hundred, 'args': ()},
-            # '3': {'bools': [prog.menu_bool], 'func': prog.game.create_libre, 'args': ()},
+            '3': {'bools': [prog.menu_bool], 'func': prog.set_up_over_red, 'args': ()},
             # '4': {'bools': [prog.menu_bool], 'func': prog.game.create_libre, 'args': ()},  
 
             # 'p': {'bools': [True], 'func': game.quit, 'args': ()}, 
@@ -833,11 +893,72 @@ hundred = {
     "score":  HundredScore,
 }
 
+over_red = {
+    "balls": {
+        "cueballs": [True, False, False],
+        "colors": [
+            {"color": "WHITE", "vector": vector(255/255, 255/255, 255/255)},
+            {"color": "YELLOW", "vector": vector(255/255, 255/255, 0)},
+            {"color": "RED", "vector": vector(255/255, 0, 0)},
+        ],
+        "start_locations": [
+            vector(-settings["table"]["height"] // 4, settings["ball_size"], 0),
+            vector(0, settings["ball_size"], 0),
+            vector(settings["table"]["height"] // 4, settings["ball_size"], 0),
+        ],
+    },
+    "goals": [
+        {
+            "Cueball": "WHITE", 
+            "Combinations": [
+                {
+                    "Combination": ["RED", "YELLOW"], 
+                    "Points": 1
+                },
+                {
+                    "Combination": ["RED"], 
+                    "Points": 0
+                },
+            ],
+        }
+    ],
+    "score": OverRedScore
+}
+
+# three_cushion = {
+#     "balls": {
+#         "cueballs": [True, False, False],
+#         "colors": [
+#             {"color": "WHITE", "vector": vector(255/255, 255/255, 255/255)},
+#             {"color": "YELLOW", "vector": vector(255/255, 255/255, 0)},
+#             {"color": "RED", "vector": vector(255/255, 0, 0)},
+#         ],
+#         "start_locations": [
+#             vector(-settings["table"]["height"] // 4, settings["ball_size"], 0),
+#             vector(0, settings["ball_size"], 0),
+#             vector(settings["table"]["height"] // 4, settings["ball_size"], 0),
+#         ],
+#     },
+#     "goals": [
+#         {
+#             "Cueball": "WHITE", 
+#             "Combinations": [
+#                 {
+#                     "Combination": ["RED", "YELLOW"], 
+#                     "Points": 1
+#                 },
+#                 {
+#                     "Combination": ["RED"], 
+#                     "Points": 0
+#                 },
+#             ],
+#         }
+#     ],
+#     "score": OverRedScore
+# }
+
 
 if __name__ == '__main__':
-    # notes:
-    # snelheden: 35 km/h => 10 m/s => 10000 mm / s => 30000 mm / (1/30 s)
-
     # setting up canvas
     scene.background = 0.8 * vector(1, 1, 1)  # Lichtgrijs (0.8 van 1.0)
     scene.width = 1280                         # Maak het 3D-scherm groter
@@ -851,13 +972,17 @@ if __name__ == '__main__':
 
     # Constants
     RATE=60
-
     games_settings = {
         'Libre': libre,
         'Hundred': hundred,
+        'Over red': over_red,
+        # '3-banden': three_cushion,
     }
 
-    prog = Prog(RATE, settings, games_settings)
+    players = ["Player 1", "Player 2"]
+    easy_mode = True
+
+    prog = Prog(RATE, settings, games_settings, players, easy_mode)
 
     # start Game
     prog.prog_loop()
