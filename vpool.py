@@ -2,6 +2,7 @@ from vpython import *
 
 
 class Prog:
+
     def __init__(self, rate, settings):
         self.menu_bool = True
         self.game_bool = False
@@ -10,7 +11,7 @@ class Prog:
         self.table = Table(settings["table"]["height"], settings["table"]["width"], settings["table"]["cushion"])
         self.caption = Caption()
         # setting up minimal components to make the keydown_func funtion.
-        self.game = Game(self.rate, self.settings, self.table, self.caption)
+        self.game = Game(self.rate, self.settings["ball_size"], self.table, self.caption, libre, ["Player 1", "Player 2"])
         self.game.cue.invisible()
         self.camera = Camera()
 
@@ -43,8 +44,21 @@ class Prog:
 
         # Clear previous game of objects and set up new game
         self.game.empty()
-        self.game = LibreGame(self.rate, self.settings, self.table, self.caption)
-        self.game.create()
+        self.game = LibreGame(self.rate, self.settings["ball_size"], self.table, self.caption, libre, ["Player 1", "Player 2"])
+
+        # Go into game modus
+        self.menu_bool, self.game_bool = self.game_bool, self.menu_bool
+
+    def set_up_hundred(self):
+        # reposition camera
+        self.camera.set_game_play()
+
+        # reset and set caption
+        self.caption.set_libre()
+
+        # Clear previous game of objects and set up new game
+        self.game.empty()
+        self.game = HundredGame(self.rate, self.settings["ball_size"], self.table, self.caption, hundred, ["Player 1", "Player 2"])
 
         # Go into game modus
         self.menu_bool, self.game_bool = self.game_bool, self.menu_bool
@@ -52,22 +66,34 @@ class Prog:
 
 class Game:
 
-    def __init__(self, rate, settings, table, caption):
-        self.cue = settings["cue"]()
-        self.game_state = settings["game_state"]()
+    def __init__(self, rate, ball_radius, table, caption, settings, players_list):
+        self.cue = Cue()
+        self.game_state = GameState()
+        self.radius = ball_radius
         self.dT = 1.0/rate
         self.table = table
         self.caption = caption
 
-        # setting up minimal components to make the keydown_func-function funtion.
-        self.score = None
-        self.balls = [Ball(1, Color("WHITE", vector(255/255, 255/255, 255/255)), vector(0,0,0), self.dT)]
-        self.players = None
-        self.current_player = None
-        self.objectives = None
-        self.current_objective = None
-        self.cueballs = self.balls[0]
-        self.current_cueball = self.balls[0]
+        # Setting up players
+        self.players = players_list
+        self.score = settings["score"](self.players)
+
+        # create balls, setup cueballs and objectives
+        self.balls = self.create_balls(settings)
+        self.cueballs = [self.balls[idx] for idx in range(len(self.balls)) if settings["balls"]["cueballs"][idx]]
+        self.objectives = [goal["Combinations"] for goal in settings["goals"]]
+
+        # setup current player
+        self.current_player = self.players[0]
+        self.current_cueball = self.cueballs[0]
+        self.current_objective = self.objectives[0]
+
+    def create_balls(self, settings):
+        """Sets up the ball required for the game."""
+        locations = settings["balls"]["start_locations"]
+        colors = settings["balls"]["colors"]
+        return [Ball(self.radius, Color(colors[idx]["color"], colors[idx]["vector"]), location, self.dT) for idx, location in enumerate(locations)]
+
 
     def game_loop(self):
         """Start the game loop."""
@@ -176,35 +202,27 @@ class Game:
         """Return current cueball"""
         return self.current_cueball
 
+
 class LibreGame(Game):
 
-    def __init__(self, rate, settings, table, caption):
-        super().__init__(rate, settings, table, caption)
-
-    def create(self):
-        """Sets up the Libre game."""
-        self.players = ["Player 1", "Player 2"]
-        self.score = libre["score"](self.players)
-        self.balls = self.create_balls()
-        self.current_player = self.players[0]
-        self.objectives = [goal["Combinations"] for goal in libre["goals"]]
-        self.current_objective = self.objectives[0]
-        self.cueballs = [self.balls[idx] for idx in range(len(self.balls)) if libre["balls"]["cueballs"][idx]]
-        self.current_cueball = self.cueballs[0]
-
-    def create_balls(self):
-        """Sets up the ball required for the game."""
-        radius = settings["ball_size"]
-        klass = libre["balls"]["klass"]
-        locations = libre["balls"]["start_locations"]
-        colors = libre["balls"]["colors"]
-        return [klass(radius, Color(colors[idx]["color"], colors[idx]["vector"]), location, self.dT) for idx, location in enumerate(locations)]
+    def __init__(self, rate, ball_radius, table, caption, settings, players_list):
+        super().__init__(rate, ball_radius, table, caption, settings, players_list)
 
     def game_finished(self):
         if self.score.get_turn() == 3:
             return True
         return False
 
+
+class HundredGame(Game):
+
+    def __init__(self, rate, ball_radius, table, caption, settings, players_list):
+        super().__init__(rate, ball_radius, table, caption, settings, players_list)
+
+    def game_finished(self):
+        if self.score.get_turn() == 3:
+            return True
+        return False
 
 class GameState:
 
@@ -572,9 +590,10 @@ class LibreScore(Score):
 
     def score_shot(self, player, objectives, collisions):
         """Determine if a player scored points based on collisions."""
-        if self.hit_objective(objectives["Combination"], collisions):
-            self.score[player] = self.score[player] + objectives["Points"]
-            return True
+        for objective in objectives:
+            if self.hit_objective(objective["Combination"], collisions):
+                self.score[player] = self.score[player] + objective["Points"]
+                return True
         return False
 
 
@@ -667,7 +686,7 @@ def keydown_func(evt):
             'x': {'bools': [prog.game_bool], 'func': prog.game.stop_balls, 'args': ()}, 
 
             '1': {'bools': [prog.menu_bool], 'func': prog.set_up_libre, 'args': ()},
-            # '2': {'bools': [prog.menu_bool], 'func': prog.game.create_libre, 'args': ()},
+            '2': {'bools': [prog.menu_bool], 'func': prog.set_up_hundred, 'args': ()},
             # '3': {'bools': [prog.menu_bool], 'func': prog.game.create_libre, 'args': ()},
             # '4': {'bools': [prog.menu_bool], 'func': prog.game.create_libre, 'args': ()},  
 
@@ -680,7 +699,6 @@ def keydown_func(evt):
         if all([bool for bool in map[key]['bools']]):
             map[key]['func'](*map[key]['args'])
 
-
 settings = {
     "table": {
         "height": 28400,
@@ -688,14 +706,11 @@ settings = {
         "acquit": 1825,
         "cushion": 370,
     },
-    "cue": Cue,
-    "game_state": GameState,
     "ball_size": 615 // 2,
 }
 
 libre = {
     "balls": {
-        "klass": Ball,
         "cueballs": [True, True, False],
         "colors": [
             {"color": "WHITE", "vector": vector(255/255, 255/255, 255/255)},
@@ -711,21 +726,65 @@ libre = {
     "goals": [
         {
             "Cueball": "WHITE", 
-            "Combinations": 
+            "Combinations": [
                 {
                     "Combination": ["YELLOW", "RED"], 
                     "Points": 1
                 },
+            ],
         },{
             "Cueball": "YELLOW", 
-            "Combinations": 
+            "Combinations": [
                 {
                     "Combination": ["WHITE", "RED"], 
                     "Points": 1
                 },
-        }
+            ],
+        },
     ],
-    "score": LibreScore,
+    "score": LibreScore
+}
+
+hundred = {
+    "balls": {
+        "cueballs": [True, False, False, False],
+        "colors": [
+            {"color": "WHITE", "vector": vector(255/255, 255/255, 255/255)},
+            {"color": "YELLOW", "vector": vector(255/255, 255/255, 0)},
+            {"color": "RED", "vector": vector(255/255, 0, 0)},
+            {"color": "BLUE", "vector": vector(0, 0, 255/255)},
+        ],
+        "start_locations": [
+            vector(-settings["table"]["height"] // 4, settings["ball_size"], settings["table"]["acquit"]),
+            vector(-settings["table"]["height"] // 4, settings["ball_size"], 0),
+            vector(settings["table"]["height"] // 4, settings["ball_size"], 0),
+            vector(0, settings["ball_size"], 0),
+        ],
+    },
+    "goals": [
+        {
+            "Cueball": "WHITE", 
+            "Combinations": [
+                {
+                    "Combination": ["YELLOW", "RED", "BLUE"], 
+                    "Points": 20
+                },
+                {
+                    "Combination": ["BLUE", "YELLOW"], 
+                    "Points": 4
+                },
+                {
+                    "Combination": ["RED", "BLUE"], 
+                    "Points": 1
+                },
+                {
+                    "Combination": ["YELLOW", "RED"], 
+                    "Points": 1
+                },
+            ],
+        },
+    ],
+    "score":  LibreScore
 }
 
 
