@@ -23,7 +23,7 @@ Please install the requirements:
 
 # Change to milestone-branch
 
-Further development will happen on the main-branch, so please checkout the milestone-branch: 
+Further development will happen on the main-branch, so please checkout the oplevering-branch: 
 
 ```git checkout oplevering```
 
