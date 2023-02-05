@@ -556,7 +556,7 @@ class Score:
 
     def n_cushions(self, objective, collisions, n):
         """Returns bool if n cushions are hit before hitting last object in objectives"""
-        if self.hit_objectives(objective, collisions):
+        if self.hit_objective(objective, collisions):
             index = max(idx for idx, val in enumerate(collisions) if val in objective)
             return collisions[:index].count("CUSHION") >= n
         return False
@@ -614,14 +614,12 @@ class LibreScore(Score):
             return True
         return False
 
+
 class ThreeCushionScore(LibreScore):
 
     def __init__(self, players, object_score):
-        """Set up score for the Libre game."""
-        super().__init__()
-        self.players = players
-        self.score = {player: 0 for player in players}
-        self.turn = 1
+        """Set up score for the Three Cushion game."""
+        super().__init__(players, object_score)
         self.object_score = 20 if object_score == None else object_score
 
     def score_shot(self, player, objectives, collisions):
@@ -668,7 +666,7 @@ class HundredScore(LibreScore):
 class OverRedScore(LibreScore):
 
     def __init__(self, players, object_score):
-        """Setup Score for Hundred game"""
+        """Setup Score for 10 over Red game"""
         super().__init__(players, object_score)
         self.object_score = 10 if object_score == None else object_score
 
@@ -792,7 +790,7 @@ The 'cue' give the direction and power of the shot. The angle can be adjusted cl
 or counterclockwise: 'A' - 0.1, 'a' - 1, 'q' - 10, 'Q' - 90 degrees. The power of the shot can be adjusted by: 'w' for increase or 's' for 
 decrease, 'W' and 'S' will do a 10 fold jump. To take a shot press 'space bar'. The cueball can be stopped by pressing 'z' or 'x' for all 
 balls. Right click on the mouse + moving will move the camera. The arrows wil move the camera around. Movement is relative to the in game 
-coordinate system, not to the viewpoint of the observer. 'p' will quit the game.
+coordinate system, not to the viewpoint of the observer.
 """
 
     def explain_menu(self):
@@ -837,7 +835,6 @@ def keydown_func(evt):
             '2': {'bools': [prog.menu_bool], 'func': prog.set_up_hundred, 'args': ()},
             '3': {'bools': [prog.menu_bool], 'func': prog.set_up_over_red, 'args': ()},
             '4': {'bools': [prog.menu_bool], 'func': prog.set_up_three_cushion, 'args': ()},  
-
         }
 
     key = evt.key
@@ -966,42 +963,8 @@ over_red = {
     "score": OverRedScore
 }
 
-three_cushion = {
-    "balls": {
-        "cueballs": [True, True, False],
-        "colors": [
-            {"color": "WHITE", "vector": vector(255/255, 255/255, 255/255)},
-            {"color": "YELLOW", "vector": vector(255/255, 255/255, 0)},
-            {"color": "RED", "vector": vector(255/255, 0, 0)},
-        ],
-        "start_locations": [
-            vector(-settings["table"]["height"] // 4, settings["ball_size"], settings["table"]["acquit"]),
-            vector(-settings["table"]["height"] // 4, settings["ball_size"], 0),
-            vector(settings["table"]["height"] // 4, settings["ball_size"], 0),
-        ],
-    },
-    "goals": [
-        {
-            "Cueball": "WHITE", 
-            "Combinations": [
-                {
-                    "Combination": ["YELLOW", "RED"], 
-                    "Points": 1
-                },
-            ],
-        },{
-            "Cueball": "YELLOW", 
-            "Combinations": [
-                {
-                    "Combination": ["WHITE", "RED"], 
-                    "Points": 1
-                },
-            ],
-        },
-    ],
-    "score": ThreeCushionScore
-}
-
+three_cushion = libre
+three_cushion["score"] = ThreeCushionScore
 
 if __name__ == '__main__':
     # setting up canvas
@@ -1010,10 +973,6 @@ if __name__ == '__main__':
     scene.height = 700
     scene.title = 'Welcome to VPool!'
     scene.bind('keydown', keydown_func)        # Functie voor toetsaanslagen
-
-    # fix camera position, currently based on magic numbers!
-    scene.camera.pos = vector(-23000, 6500, 0)
-    scene.camera.axis = vector(23000, -6500, 0)
 
     # Constants
     RATE=60
@@ -1024,10 +983,10 @@ if __name__ == '__main__':
         'Three cushion': three_cushion,
     }
 
+    # Pick names for players and set easy mode.
     players = ["Player 1", "Player 2"]
     easy_mode = True
 
-    prog = Prog(RATE, settings, games_settings, players, easy_mode)
-
     # start Game
+    prog = Prog(RATE, settings, games_settings, players, easy_mode)
     prog.prog_loop()
