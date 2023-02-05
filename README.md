@@ -16,7 +16,8 @@ Clone the repository:
 
 # Install the dependencies
 
-The project requires several libraries to function. Please install them:  
+The project requires several libraries to function. Change into the directory (default: vpool). 
+Please install the requirements:  
 
 ```pip install -r requirements.txt```
 
@@ -24,7 +25,7 @@ The project requires several libraries to function. Please install them:
 
 Further development will happen on the main-branch, so please checkout the milestone-branch: 
 
-```git checkout milestone```
+```git checkout oplevering```
 
 # Starting the application
 
