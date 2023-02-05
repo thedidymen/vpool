@@ -16,15 +16,16 @@ Clone the repository:
 
 # Install the dependencies
 
-The project requires several libraries to function. Please install them:  
+The project requires several libraries to function. Change into the directory (default: vpool).
+Please install the requirements:  
 
 ```pip install -r requirements.txt```
 
 # Change to milestone-branch
 
-Further development will happen on the main-branch, so please checkout the milestone-branch: 
+Further development will happen on the main-branch, so please checkout the main-branch: 
 
-```git checkout milestone```
+```git checkout main```
 
 # Starting the application
 
