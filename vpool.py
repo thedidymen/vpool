@@ -624,46 +624,12 @@ class ThreeCushionScore(LibreScore):
         self.turn = 1
         self.object_score = 20 if object_score == None else object_score
 
-    def __repr__(self):
-        """Set respresentation of instance of LibreScore"""
-        s = "Current score: "
-        for player in self.players:
-            s += f"{player}: {self.score[player]}, "
-        s += f"turn: {self.turn}"
-        return s
-
-    def victor(self):
-        """Determine the winner"""
-        s = str(self)
-        victors = [key for key, value in self.score.items() if value == max(self.score.values())]
-        if len(victors) > 1:
-            return f"{s}\nWinnaars: {', '.join(victors)}\n"
-        return f"{s}\nWinnaar: {victors[0]}\n"
-
-    def next_turn(self):
-        """Increase turn marker by 1."""
-        self.turn += 1
-
-    def get_turn(self):
-        """Return number of turns taken."""
-        return self.turn
-
-    def get_player_score(self, player):
-        """Return the score of a player"""
-        return self.score[player]
-
     def score_shot(self, player, objectives, collisions):
         """Determine if a player scored points based on collisions."""
         for objective in objectives:
-            if self.hit_objective(objective["Combination"], collisions):
+            if self.n_cushions(objective["Combination"], collisions, 3):
                 self.score[player] = self.score[player] + objective["Points"]
                 return True
-        return False
-
-    def check_victor(self):
-        """Check if there is a winner."""
-        if self.get_turn() == self.object_score:
-            return True
         return False
 
 
