@@ -2,7 +2,7 @@
 
 Setup up an environment:  
 
-```python3 -m env ./env```
+```python3 -m venv ./env```
 
 and activate it:  
 
