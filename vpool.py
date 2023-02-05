@@ -23,15 +23,30 @@ class Prog:
             if self.game_bool:
                 self.game.game_loop()
 
+            if self.game.game_state.finished:
+                self.game.cue.invisible()
+                self.caption.set_menu_and_score(self.game.score.victor())
+                self.menu_bool, self.game_bool = self.game_bool, self.menu_bool
+                self.game.game_state.finished = False
+
+
     def menu_loop(self):
         """Do menu animation"""
         self.camera.new_pos()
 
     def set_up_libre(self):
+        # reposition camera
         self.camera.set_game_play()
+
+        # reset and set caption
         self.caption.set_libre()
+
+        # Clear previous game of objects and set up new game
+        self.game.empty()
         self.game = LibreGame(self.rate, self.settings, self.table, self.caption)
         self.game.create()
+
+        # Go into game modus
         self.menu_bool, self.game_bool = self.game_bool, self.menu_bool
 
 
@@ -44,7 +59,7 @@ class Game:
         self.table = table
         self.caption = caption
 
-        # setting up minimal components to make the keydown_func funtion.
+        # setting up minimal components to make the keydown_func-function funtion.
         self.score = None
         self.balls = [Ball(1, Color("WHITE", vector(255/255, 255/255, 255/255)), vector(0,0,0), self.dT)]
         self.players = None
@@ -66,17 +81,26 @@ class Game:
             self.game_state.shot = True
         
         if self.game_state.shot and not self.game_state.moving_balls:
-            self.game_state.point = self.score_points()
+            self.game_state.lose_turn = self.score_points()
 
-            if not self.game_state.point:
+            if not self.game_state.lose_turn:
                 self.change_player()
+                if self.game_finished():
+                    self.game_state.finished = True
         
             self.setup_turn()
 
             self.game_state.shot = False
-            self.game_state.point = False
+            self.game_state.lose_turn = False
 
         self.caption.update(self.score)
+
+    def empty(self):
+        for ball in self.balls:
+            ball.invisible()
+
+    def game_finished(self):
+        return False
 
     def setup_turn(self):
         """Clears collisions registered by the balls, replaces the cue and makes it visible."""
@@ -94,10 +118,10 @@ class Game:
 
     def score_points(self):
         """Score points if conditions are met."""
-        point = False
+        lose_turn = False
         if len(self.current_cueball.get_collisions()) > 0:
-            point = self.score.score_shot(self.current_player, self.current_objective, self.current_cueball.get_collisions())
-        return point
+            lose_turn = self.score.score_shot(self.current_player, self.current_objective, self.current_cueball.get_collisions())
+        return lose_turn
 
     def change_player(self):
         """Change to next player."""
@@ -176,24 +200,28 @@ class LibreGame(Game):
         colors = libre["balls"]["colors"]
         return [klass(radius, Color(colors[idx]["color"], colors[idx]["vector"]), location, self.dT) for idx, location in enumerate(locations)]
 
+    def game_finished(self):
+        if self.score.get_turn() == 3:
+            return True
+        return False
+
 
 class GameState:
 
     def __init__(self):
         """Set up game states, to keep track of current state of the game."""
-
         # Turn states
         self.shot = False
         self.moving_balls = False
-        # self.control = True
-        self.point = False
-
+        self.lose_turn = False
+        self.finished = False
 
     def reset_game_state(self):
         """Reset game state to start a new game."""
         self.shot = False
         self.moving_balls = False
-        self.point = False
+        self.lose_turn = False
+        self.finished = False
 
 
 class Table:
@@ -329,6 +357,9 @@ class Ball:
         """Resets collision list."""
         self.collisions = []
 
+    def invisible(self):
+        self.ball.visible = False
+
 
 class Collision:
 
@@ -391,7 +422,7 @@ class Collision:
 
 class Cue:
 
-    def __init__(self, power=5000, max_power=18000):
+    def __init__(self, power=5000, max_power=20000):
         """Generate object to show direction and speed of cue-ball."""
         self.rod = cylinder(pos = vector(0, 50, 0), axis = vector(1000, 0, 0),radius = 20, color = vector(139, 69, 19)/255)
         self.angle = 0
@@ -519,6 +550,14 @@ class LibreScore(Score):
         s += f"turn: {self.turn}"
         return s
 
+    def victor(self):
+        s = str(self)
+        victors = [key for key, value in self.score.items() if value == max(self.score.values())]
+        if len(victors) > 1:
+            return f"{s}\nWinnaars: {', '.join(victors)}\n"
+        return f"{s}\nWinnaar: {victors[0]}\n"
+
+
     def next_turn(self):
         """Increase turn marker by 1."""
         self.turn += 1
@@ -554,6 +593,9 @@ class Caption:
         else:
             scene.caption = f"""{score}\n{self.game}{self.interface}"""
 
+    def empty(self):
+        scene.caption = ""
+
     def set_libre(self):
         """Select text for Libre game"""
         self.interface = self.explain_interface()
@@ -562,6 +604,10 @@ class Caption:
     def set_menu(self):
         """Select text for menu"""
         self.interface = self.explain_menu()
+
+    def set_menu_and_score(self, victor):
+        """Select text for menu"""
+        scene.caption = f"""{victor}{self.explain_menu()}"""
 
     def explain_libre(self):
         """Explanation for Libre"""
@@ -617,8 +663,8 @@ def keydown_func(evt):
             'E': {'bools': [prog.game_bool, not prog.game.game_state.moving_balls], 'func': prog.game.cue.change_angle, 'args': (1, 90)},
 
             ' ': {'bools': [prog.game_bool, not prog.game.game_state.moving_balls], 'func': prog.game.get_cueball().set_velocity, 'args': (prog.game.cue.new_velocity(),)},
-            'z': {'bools': [prog.game_bool, not prog.game.game_state.moving_balls], 'func': prog.game.get_cueball().set_velocity, 'args': (vector(0, 0, 0),)},
-            'x': {'bools': [prog.game_bool, not prog.game.game_state.moving_balls], 'func': prog.game.stop_balls, 'args': ()}, 
+            'z': {'bools': [prog.game_bool], 'func': prog.game.get_cueball().set_velocity, 'args': (vector(0, 0, 0),)},
+            'x': {'bools': [prog.game_bool], 'func': prog.game.stop_balls, 'args': ()}, 
 
             '1': {'bools': [prog.menu_bool], 'func': prog.set_up_libre, 'args': ()},
             # '2': {'bools': [prog.menu_bool], 'func': prog.game.create_libre, 'args': ()},
