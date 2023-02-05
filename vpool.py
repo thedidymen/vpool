@@ -4,19 +4,25 @@ from vpython import *
 class Prog:
 
     def __init__(self, rate, settings, games_settings):
+        """Create Program objects and settings"""
         self.menu_bool = True
         self.game_bool = False
+
         self.rate = rate
         self.settings = settings
         self.games_settings = games_settings
+
         self.table = Table(settings["table"]["height"], settings["table"]["width"], settings["table"]["cushion"])
         self.caption = Caption()
+        self.camera = Camera()
+
         # setting up minimal components to make the keydown_func funtion.
         self.game = Game(self.rate, self.settings["ball_size"], self.table, self.caption, self.games_settings['Libre'], ["Player 1", "Player 2"])
         self.game.cue.invisible()
-        self.camera = Camera()
+
 
     def prog_loop(self):
+        """The program loop."""
         while True:
             rate(self.rate)
             if self.menu_bool:
@@ -33,41 +39,35 @@ class Prog:
 
 
     def menu_loop(self):
-        """Do menu animation"""
+        """Do menu animation."""
         self.camera.new_pos()
 
-    def set_up_libre(self):
+    def setup_game(self):
+        """General setup for a game"""
         # reposition camera
         self.camera.set_game_play()
-
-        # reset and set caption
-        self.caption.set_libre()
-
         # Clear previous game of objects and set up new game
         self.game.empty()
+        # Go into game modus
+        self.menu_bool, self.game_bool = self.game_bool, self.menu_bool
+
+    def set_up_libre(self):
+        """set caption and game specific settings for Libre"""
+        self.setup_game()
+        self.caption.set_libre()
         self.game = LibreGame(self.rate, self.settings["ball_size"], self.table, self.caption, self.games_settings['Libre'], ["Player 1", "Player 2"])
 
-        # Go into game modus
-        self.menu_bool, self.game_bool = self.game_bool, self.menu_bool
-
     def set_up_hundred(self):
-        # reposition camera
-        self.camera.set_game_play()
-
-        # reset and set caption
+        """set caption and game specific settings for Hundred"""
+        self.setup_game()
         self.caption.set_hundred()
-
-        # Clear previous game of objects and set up new game
-        self.game.empty()
         self.game = HundredGame(self.rate, self.settings["ball_size"], self.table, self.caption, self.games_settings['Hundred'], ["Player 1", "Player 2"])
-
-        # Go into game modus
-        self.menu_bool, self.game_bool = self.game_bool, self.menu_bool
 
 
 class Game:
 
     def __init__(self, rate, ball_radius, table, caption, settings, players_list):
+        """Setup a Game"""
         self.cue = Cue()
         self.game_state = GameState()
         self.radius = ball_radius
@@ -95,9 +95,8 @@ class Game:
         colors = settings["balls"]["colors"]
         return [Ball(self.radius, Color(colors[idx]["color"], colors[idx]["vector"]), location, self.dT) for idx, location in enumerate(locations)]
 
-
     def game_loop(self):
-        """Start the game loop."""
+        """One iteration of the game loop."""
         self.place_cue()
 
         self.balls_update()
@@ -123,10 +122,12 @@ class Game:
         self.caption.update(self.current_player, self.score)
 
     def empty(self):
+        """Previous game objects cannot be delete in VPython, set them to invisible."""
         for ball in self.balls:
             ball.invisible()
 
     def game_finished(self):
+        """A base game never finishes."""
         return False
 
     def setup_turn(self):
@@ -234,13 +235,6 @@ class GameState:
         self.lose_turn = False
         self.finished = False
 
-    def reset_game_state(self):
-        """Reset game state to start a new game."""
-        self.shot = False
-        self.moving_balls = False
-        self.lose_turn = False
-        self.finished = False
-
 
 class Table:
 
@@ -314,13 +308,15 @@ class Ball:
         """Progressively apply friction and set velocity to zero when the magnitude approached zero."""
         magnitude = self.get_velocity().mag
         friction = 1.0
-        if magnitude > 3000:            # progressive increase in friction to prevent long waiting for the balls to stop 
-            friction = 0.996
+        if magnitude > 10000:            # progressive increase in friction to prevent long waiting for the balls to stop 
+            friction = 0.999
+        elif magnitude > 3000:
+            friction = 0.995
         elif magnitude > 1000:
-            friction = 0.96
-        elif magnitude > 300:
+            friction = 0.99
+        elif magnitude > 500:
             friction = 0.85
-        elif magnitude > 10:
+        elif magnitude > 100:
             friction = 0.6
         else:
             self.ball.vel = vector(0, 0, 0)
@@ -376,6 +372,7 @@ class Ball:
         self.collisions = []
 
     def invisible(self):
+        """Turn ball invisible"""
         self.ball.visible = False
 
 
@@ -500,17 +497,17 @@ class Camera:
         scene.camera.axis = vector(self.distance * cos(rad), -6500, self.distance * sin(rad))
 
     def set_game_play(self):
+        """Set camera to game play start position"""
         scene.camera.pos = vector(-23000, 6500, 0)
         scene.camera.axis = vector(23000, -6500, 0)
 
     def move_x(self, direction, change=1000):
-        # rad = tan(scene.camera.pos.z/scene.camera.pos.x)
-        # scene.camera.pos = vector(scene.camera.pos.x - direction * cos(rad) * change, scene.camera.pos.y, scene.camera.pos.z - direction * sin(rad) * change)
-        # scene.camera.axis = vector(scene.camera.axis.x - direction * cos(rad) * change, scene.camera.axis.y, scene.camera.axis.z - direction * sin(rad) * change)
+        """Move camera over x axis"""
         scene.camera.pos = vector(scene.camera.pos.x - direction * change, scene.camera.pos.y, scene.camera.pos.z)
         scene.camera.axis = vector(scene.camera.axis.x - direction * change, scene.camera.axis.y, scene.camera.axis.z)
 
     def move_z(self, direction, change=1000):
+        """Move camera over z axis"""
         scene.camera.pos = vector(scene.camera.pos.x, scene.camera.pos.y, scene.camera.pos.z - direction * change)
         scene.camera.axis = vector(scene.camera.axis.x, scene.camera.axis.y, scene.camera.axis.z - direction * change)
 
@@ -568,6 +565,7 @@ class LibreScore(Score):
         return s
 
     def victor(self):
+        """Determine the winner"""
         s = str(self)
         victors = [key for key, value in self.score.items() if value == max(self.score.values())]
         if len(victors) > 1:
@@ -597,10 +595,12 @@ class LibreScore(Score):
 class HundredScore(LibreScore):
 
     def __init__(self, players, object_score=4):
+        """Setup Score for Hundred game"""
         super().__init__(players)
         self.object_score = object_score
 
     def victor(self):
+        """Determine the winner"""
         s = str(self)
         victors = [key for key, value in self.score.items() if value == self.object_score]
         if len(victors) > 1:
@@ -618,6 +618,7 @@ class HundredScore(LibreScore):
         return False
 
     def check_victor(self):
+        """Check if there is a winner."""
         for player in self.players:
             if self.score[player] == self.object_score:
                 return True
@@ -644,6 +645,7 @@ class Caption:
             scene.caption = f"""{score}{current_player}\n{self.game}{self.interface}"""
 
     def empty(self):
+        """Clear caption."""
         scene.caption = ""
 
     def set_libre(self):
@@ -848,7 +850,7 @@ if __name__ == '__main__':
     scene.camera.axis = vector(23000, -6500, 0)
 
     # Constants
-    RATE=30
+    RATE=60
 
     games_settings = {
         'Libre': libre,
