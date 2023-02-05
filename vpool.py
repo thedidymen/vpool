@@ -13,7 +13,7 @@ class Prog:
         self.game = Game(self.rate, self.settings, self.table, self.caption)
         self.game.cue.invisible()
         self.camera = Camera()
-        
+
     def prog_loop(self):
         while True:
             rate(self.rate)
@@ -33,6 +33,7 @@ class Prog:
         self.game = LibreGame(self.rate, self.settings, self.table, self.caption)
         self.game.create()
         self.menu_bool, self.game_bool = self.game_bool, self.menu_bool
+
 
 class Game:
 
@@ -184,7 +185,9 @@ class GameState:
         # Turn states
         self.shot = False
         self.moving_balls = False
+        # self.control = True
         self.point = False
+
 
     def reset_game_state(self):
         """Reset game state to start a new game."""
@@ -598,24 +601,24 @@ def keydown_func(evt):
             'up': {'bools': [prog.game_bool], 'func': prog.camera.move_x, 'args': (-1,)},
             'down': {'bools': [prog.game_bool], 'func': prog.camera.move_x, 'args': (1,)},
 
-            'w': {'bools': [prog.game_bool], 'func': prog.game.cue.change_power, 'args': (1,)},
-            'W': {'bools': [prog.game_bool], 'func': prog.game.cue.change_power, 'args': (1, 1000)},
-            's': {'bools': [prog.game_bool], 'func': prog.game.cue.change_power, 'args': (-1,)},
-            'S': {'bools': [prog.game_bool], 'func': prog.game.cue.change_power, 'args': (-1, 1000)},
+            'w': {'bools': [prog.game_bool, not prog.game.game_state.moving_balls], 'func': prog.game.cue.change_power, 'args': (1,)},
+            'W': {'bools': [prog.game_bool, not prog.game.game_state.moving_balls], 'func': prog.game.cue.change_power, 'args': (1, 1000)},
+            's': {'bools': [prog.game_bool, not prog.game.game_state.moving_balls], 'func': prog.game.cue.change_power, 'args': (-1,)},
+            'S': {'bools': [prog.game_bool, not prog.game.game_state.moving_balls], 'func': prog.game.cue.change_power, 'args': (-1, 1000)},
 
-            'a': {'bools': [prog.game_bool], 'func': prog.game.cue.change_angle, 'args': (-1,)},
-            'A': {'bools': [prog.game_bool], 'func': prog.game.cue.change_angle, 'args': (-1, 0.1)},
-            'q': {'bools': [prog.game_bool], 'func': prog.game.cue.change_angle, 'args': (-1, 10)},
-            'Q': {'bools': [prog.game_bool], 'func': prog.game.cue.change_angle, 'args': (-1, 90)},
+            'a': {'bools': [prog.game_bool, not prog.game.game_state.moving_balls], 'func': prog.game.cue.change_angle, 'args': (-1,)},
+            'A': {'bools': [prog.game_bool, not prog.game.game_state.moving_balls], 'func': prog.game.cue.change_angle, 'args': (-1, 0.1)},
+            'q': {'bools': [prog.game_bool, not prog.game.game_state.moving_balls], 'func': prog.game.cue.change_angle, 'args': (-1, 10)},
+            'Q': {'bools': [prog.game_bool, not prog.game.game_state.moving_balls], 'func': prog.game.cue.change_angle, 'args': (-1, 90)},
 
-            'd': {'bools': [prog.game_bool], 'func': prog.game.cue.change_angle, 'args': (1,)},
-            'D': {'bools': [prog.game_bool], 'func': prog.game.cue.change_angle, 'args': (1, 0.1)},
-            'e': {'bools': [prog.game_bool], 'func': prog.game.cue.change_angle, 'args': (1, 10)},
-            'E': {'bools': [prog.game_bool], 'func': prog.game.cue.change_angle, 'args': (1, 90)},
+            'd': {'bools': [prog.game_bool, not prog.game.game_state.moving_balls], 'func': prog.game.cue.change_angle, 'args': (1,)},
+            'D': {'bools': [prog.game_bool, not prog.game.game_state.moving_balls], 'func': prog.game.cue.change_angle, 'args': (1, 0.1)},
+            'e': {'bools': [prog.game_bool, not prog.game.game_state.moving_balls], 'func': prog.game.cue.change_angle, 'args': (1, 10)},
+            'E': {'bools': [prog.game_bool, not prog.game.game_state.moving_balls], 'func': prog.game.cue.change_angle, 'args': (1, 90)},
 
-            ' ': {'bools': [prog.game_bool], 'func': prog.game.get_cueball().set_velocity, 'args': (prog.game.cue.new_velocity(),)},
-            'z': {'bools': [prog.game_bool], 'func': prog.game.get_cueball().set_velocity, 'args': (vector(0, 0, 0),)},
-            'x': {'bools': [prog.game_bool], 'func': prog.game.stop_balls, 'args': ()}, 
+            ' ': {'bools': [prog.game_bool, not prog.game.game_state.moving_balls], 'func': prog.game.get_cueball().set_velocity, 'args': (prog.game.cue.new_velocity(),)},
+            'z': {'bools': [prog.game_bool, not prog.game.game_state.moving_balls], 'func': prog.game.get_cueball().set_velocity, 'args': (vector(0, 0, 0),)},
+            'x': {'bools': [prog.game_bool, not prog.game.game_state.moving_balls], 'func': prog.game.stop_balls, 'args': ()}, 
 
             '1': {'bools': [prog.menu_bool], 'func': prog.set_up_libre, 'args': ()},
             # '2': {'bools': [prog.menu_bool], 'func': prog.game.create_libre, 'args': ()},
