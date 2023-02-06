@@ -145,7 +145,7 @@ class Game:
             self.game_state.shot = False
             self.game_state.lose_turn = False
 
-        self.caption.update(self.current_player, self.score)
+        self.caption.update(self.current_player, str(self.score))
 
     def empty(self):
         """Previous game objects cannot be delete in VPython, set them to invisible."""
@@ -963,8 +963,41 @@ over_red = {
     "score": OverRedScore
 }
 
-three_cushion = libre
-three_cushion["score"] = ThreeCushionScore
+three_cushion = {
+    "balls": {
+        "cueballs": [True, True, False],
+        "colors": [
+            {"color": "WHITE", "vector": vector(255/255, 255/255, 255/255)},
+            {"color": "YELLOW", "vector": vector(255/255, 255/255, 0)},
+            {"color": "RED", "vector": vector(255/255, 0, 0)},
+        ],
+        "start_locations": [
+            vector(-settings["table"]["height"] // 4, settings["ball_size"], settings["table"]["acquit"]),
+            vector(-settings["table"]["height"] // 4, settings["ball_size"], 0),
+            vector(settings["table"]["height"] // 4, settings["ball_size"], 0),
+        ],
+    },
+    "goals": [
+        {
+            "Cueball": "WHITE", 
+            "Combinations": [
+                {
+                    "Combination": ["YELLOW", "RED"], 
+                    "Points": 1
+                },
+            ],
+        },{
+            "Cueball": "YELLOW", 
+            "Combinations": [
+                {
+                    "Combination": ["WHITE", "RED"], 
+                    "Points": 1
+                },
+            ],
+        },
+    ],
+    "score": ThreeCushionScore
+}
 
 if __name__ == '__main__':
     # setting up canvas
@@ -984,7 +1017,7 @@ if __name__ == '__main__':
     }
 
     # Pick names for players and set easy mode.
-    players = ["Misja", "Emily"]
+    players = ["Player 1", "Player 2"]
     easy_mode = True
 
     # start Game
