@@ -429,9 +429,11 @@ class Collision:
                 velocity_ball = ball.get_velocity()
                 velocity_self_ball = self.ball.get_velocity()
 
-                # Turn back time one step
-                ball.update(direction=-1)
-                self.ball.update(direction=-1)
+                while mag(diff) < distance:
+                    # Turn back time one step
+                    ball.update(direction=-1)
+                    self.ball.update(direction=-1)
+                    diff = ball.get_position() - self.ball.get_position()
 
                 # get perpendicular and tangent line
                 velocity_ball_rad = proj(velocity_ball, diff)
