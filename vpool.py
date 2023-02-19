@@ -430,7 +430,7 @@ class Collision:
                 velocity_self_ball = self.ball.get_velocity()
 
                 while mag(diff) < distance:
-                    # Turn back time one step
+                    # Turn back time one step until balls are free of each other
                     ball.update(direction=-1)
                     self.ball.update(direction=-1)
                     diff = ball.get_position() - self.ball.get_position()
